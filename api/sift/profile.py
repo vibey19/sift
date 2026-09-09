@@ -15,7 +15,7 @@ import unicodedata
 import numpy as np
 import pandas as pd
 
-from . import config, formats
+from . import config, formats, parsing
 
 CONSTANT = "constant"
 ID_LIKE = "id_like"
@@ -45,28 +45,44 @@ def _pad_or_trim(width: int):
 
 def load_csv(text: str, delimiter: str | None = None) -> pd.DataFrame:
     if delimiter is None:
-        delimiter = "\t" if "\t" in text.split("\n", 1)[0] else ","
+        delimiter = parsing.detect_delimiter(text)
 
+    # Read headerless and name the columns here. Left to pandas, a repeated
+    # header becomes "a.1" and a blank one "Unnamed: 1", neither of which the
+    # browser would produce, and a fix naming such a column would silently miss.
+    #
     # Everything arrives as a string and this module decides what is missing.
-    # pandas' default na_values would silently turn "N/A" and "none" into NaN,
-    # which is exactly the evidence C4 and C5 exist to report.
+    # pandas' default na_values would turn "N/A" and "none" into NaN, which is
+    # exactly the evidence C4 and C11 exist to report.
     options = dict(
         delimiter=delimiter,
         dtype=str,
+        header=None,
         keep_default_na=False,
         na_values=[],
         skip_blank_lines=True,
     )
     try:
-        return pd.read_csv(io.StringIO(text), **options)
+        raw = pd.read_csv(io.StringIO(text), **options)
+    except pd.errors.EmptyDataError:
+        return pd.DataFrame()
     except pd.errors.ParserError:
-        header = pd.read_csv(io.StringIO(text), nrows=0, **options)
-        return pd.read_csv(
+        header = next(line for line in parsing.split_lines(text) if line.strip())
+        width = parsing.count_outside_quotes(header, delimiter) + 1
+        raw = pd.read_csv(
             io.StringIO(text),
             engine="python",
-            on_bad_lines=_pad_or_trim(len(header.columns)),
-            **options,
+            on_bad_lines=_pad_or_trim(width),
+            names=range(width),
+            **{k: v for k, v in options.items() if k != "header"},
         )
+
+    if raw.empty:
+        return pd.DataFrame()
+
+    frame = raw.iloc[1:].reset_index(drop=True)
+    frame.columns = parsing.normalise_headers(list(raw.iloc[0]))
+    return frame
 
 
 def normalise_text(value: str) -> str:
@@ -162,8 +178,13 @@ def infer_type(s: pd.Series, n_rows: int) -> str:
         # them apart is the formatting itself: an identifier does not carry a
         # currency symbol, a percent sign or a unit. Continuity is no help,
         # because round amounts have no fractional part to vary.
-        dressed = values.map(formats.needs_reformatting)
-        if float(dressed.mean()) > config.NUMERIC_PARSE_FRACTION:
+        # Sentinels are excluded from the ratio. A handful of ERROR values in a
+        # column of money is not evidence that the column is an identifier, but
+        # counted against it they drag the share below the threshold and the
+        # whole column is misread.
+        readable = values[~is_sentinel(values)]
+        dressed = readable.map(formats.needs_reformatting)
+        if len(readable) and float(dressed.mean()) > config.NUMERIC_PARSE_FRACTION:
             looks_continuous = True
     # Uniqueness is measured over the values that are actually there. A column
     # that is 40% blank but distinct wherever it is filled is still an id, and

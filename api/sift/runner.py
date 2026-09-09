@@ -37,6 +37,10 @@ def _attempt(name: str, fn, fallback):
 
 def load(csv: str, delimiter: str | None = None) -> pd.DataFrame:
     df = prof.load_csv(csv, delimiter)
+    if not len(df.columns):
+        # Reading an empty file no longer raises now that the header is handled
+        # here rather than by pandas, so the refusal has to be explicit.
+        raise ValueError("there are no columns in it")
     if len(df) > config.MAX_ROWS:
         raise InputTooLarge(
             f"{len(df)} rows exceeds the {config.MAX_ROWS} row limit. "

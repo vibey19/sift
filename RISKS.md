@@ -16,8 +16,8 @@ embarrass the project in front of an examiner.
 
 | # | Fault | Evidence |
 |---|-------|----------|
-| 1 | **Browser and server disagree about column names.** Server sees `a, a.1, b`; browser sees `a, a, b`. Blank names: `Unnamed: 1` vs `column_2`. Padded names: server keeps `' a '`, browser trims to `'a'`. Every fix naming such a column silently does nothing — `replay` hits `if (col == null) break` and moves on. | confirmed |
-| 2 | **Semicolon, pipe and colon delimiters.** The server only sniffs tab vs comma, so `a;b` parses as one column. The browser *does* detect `;`, so the two halves disagree about the entire shape of the file. | confirmed |
+| ~~1~~ | ~~**Browser and server disagree about column names.**~~ **FIXED.** Both now implement one contract (`api/sift/parsing.py`, `src/parsing.js`): headers trimmed, blanks become `column_N`, repeats gain `_2`. `tests/test_parsing.py` runs both parsers over 25 awkward files and compares delimiter, column names and every row. | fixed |
+| ~~2~~ | ~~**Semicolon, pipe and colon delimiters.**~~ **MOSTLY FIXED.** Semicolon, pipe and tab are detected by both sides, from a 20-line sample rather than the header alone, counting only outside quotes, and preferring the candidate that divides the most lines consistently. Colon is deliberately excluded: it appears inside times and URLs, so accepting it would break more files than it fixes. | fixed |
 | 3 | **Ambiguous dates.** When no day exceeds 12, `03/04/2023` is month-first by assumption. Half of all such files are wrong, with no warning. | confirmed |
 | 4 | **C5 merges case-sensitive values.** `BRCA1` and `brca1` are collapsed. Gene symbols, currency codes, base64, hashes and case-sensitive keys are all corrupted this way. | confirmed |
 | 5 | **C11 blanks a legitimate `N/A`.** In a "reason for return" column, "N/A" means not applicable and is a real answer. At 40% of the column it is still blanked. | confirmed |
@@ -69,9 +69,13 @@ Not wrong, just absent. Each one is a class of file Sift cannot help with.
 
 ## Order of work
 
-1. **#1 and #2 together** — one shared parsing contract. Everything else is
-   built on the assumption that both halves see the same table, and right now
-   they do not.
+1. ~~**#1 and #2 together** — one shared parsing contract.~~ **Done.** Both
+   halves now agree, and a cross-implementation test keeps them that way. Two
+   further faults surfaced while doing it and were fixed: a long data row could
+   widen the table past its own header and invent a nameless column, and a
+   column of money with a few ERROR values in it was still read as an
+   identifier, because the sentinels dragged the "looks like formatted numbers"
+   share below its threshold.
 2. **#3, #5, #6, #4** — stop guessing. Where the answer is genuinely ambiguous,
    the fix belongs in the "your call" list rather than the one-click list.
 3. **#12, #13, #14** — header and footer detection.

@@ -3,21 +3,11 @@
 // Follows RFC 4180: fields may be quoted, quotes escape by doubling, and a quoted
 // field may contain the delimiter or a newline.
 
+import { detectDelimiter, normaliseHeaders } from './parsing.js'
+
 const QUOTE = '"'
 
-export function detectDelimiter(text) {
-  // Only the header is examined. A comma inside a quoted field further down would
-  // otherwise outvote a genuine tab-separated file.
-  const header = text.slice(0, text.indexOf('\n') === -1 ? text.length : text.indexOf('\n'))
-  let inQuotes = false
-  const counts = { ',': 0, '\t': 0, ';': 0 }
-  for (const char of header) {
-    if (char === QUOTE) inQuotes = !inQuotes
-    else if (!inQuotes && char in counts) counts[char] += 1
-  }
-  const [best] = Object.entries(counts).sort((a, b) => b[1] - a[1])
-  return best[1] > 0 ? best[0] : ','
-}
+export { detectDelimiter }
 
 export function parseCsv(text, { delimiter } = {}) {
   if (typeof text !== 'string') throw new TypeError('parseCsv expects a string')
@@ -81,7 +71,7 @@ export function parseCsv(text, { delimiter } = {}) {
 
   if (!rows.length) return { columns: [], rows: [], delimiter: sep }
 
-  const columns = rows[0].map((name, i) => name.trim() || `column_${i + 1}`)
+  const columns = normaliseHeaders(rows[0])
   const width = columns.length
   const body = rows.slice(1).map((cells) => {
     if (cells.length === width) return cells
