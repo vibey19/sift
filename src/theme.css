@@ -674,3 +674,31 @@ p.demo-note {
   .foot-inner { padding: 20px 18px; }
   .foot a { margin-left: 0 !important; }
 }
+
+/* ---------- one-click fixes ---------- */
+
+.autofix {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+  border: 1px solid var(--app-text);
+  border-left: 4px solid var(--lime);
+  background: var(--app-panel);
+  padding: 16px 18px;
+  margin-bottom: 16px;
+}
+.autofix strong { font-size: 13px; letter-spacing: 0.02em; }
+.autofix ul { margin: 8px 0 0; padding-left: 18px; font-size: 14px; line-height: 1.6; }
+.autofix li { color: var(--app-text); }
+p.autofix-note {
+  margin: 10px 0 0;
+  font-size: 13px;
+  color: var(--app-text-soft);
+  max-width: 62ch;
+}
+.autofix button { margin-left: auto; white-space: nowrap; }
+
+@media (max-width: 620px) {
+  .autofix { flex-direction: column; }
+  .autofix button { margin-left: 0; }
+}

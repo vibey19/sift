@@ -1,16 +1,18 @@
 # Sift
 
-Sift takes a CSV and tells you which rows and columns are probably wrong before you train anything on them.
+Sift cleans a messy CSV without the notebook. Drop a file in and it runs fifteen checks, fixes the unambiguous problems in one click, and hands you the rest with the row numbers and a reason.
 
 Live: `<url>` · Sample datasets load from the empty state, so you can try it without uploading anything.
 
-![Auditing a sample dataset, dropping the leaked column it found, and watching the reported accuracy fall from 0.985 to 0.715](docs/demo.gif)
+![Dropping in a sample CSV, applying the four safe fixes in one click, then dropping the leaked column it found and watching the reported accuracy fall from 0.985 to 0.718](docs/demo.gif)
 
 ## Why I built it
 
-I kept reading about models that scored well in validation and fell apart in production, and in most of the write-ups the cause turned out to be the data rather than the model. A column that quietly contained the answer. A few hundred rows labelled wrong. The same records sitting in both the training and test split.
+Every new dataset meant the same half hour. Read it in, check the dtypes, count the nulls, find the duplicates, discover the category column has four spellings of the same value, write the same six lines I wrote last month, lose the notebook, write them again for the next file.
 
-None of that is hard to find once you know to look for it. It is just tedious, so nobody looks. I wanted a tool that does the looking, and I wanted to write the detection logic myself rather than call an API and hope.
+None of it is difficult. It is repetitive enough that people skip it, and the faults worth catching hide behind the boring ones — a column that quietly contains the answer, a few hundred rows labelled wrong, the same records sitting in both the training and test split. I wanted the repetitive part done in one click and the interesting part surfaced rather than buried, and I wanted to write the detection logic myself rather than call an API and hope.
+
+The split the tool draws is between fixes that need a decision and fixes that do not. Duplicates, spelling variants, columns that never vary and rows that are more than half empty get applied together on one button, because there is no judgement in any of them. Everything else — the leaked column, the contaminated rows, the model's opinion about your labels — is shown with its evidence and left alone until you say so.
 
 ## What it checks
 

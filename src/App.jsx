@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 
 import { ApiError, audit, profile as fetchProfile } from './api.js'
+import { describeFixes, safeFixes } from './autofix.js'
 import { parseCsv, toCsv } from './csv.js'
 import { describe as describeEdit, replay } from './edits.js'
 import { buildReport } from './report.js'
@@ -26,6 +27,7 @@ export default function App({ handoff, onLeave }) {
   const [result, setResult] = useState(null)
   const [selectedId, setSelectedId] = useState(null)
   const [edits, setEdits] = useState([])
+  const [fixesApplied, setFixesApplied] = useState(false)
   const [error, setError] = useState(null)
 
   // A file chosen on the landing page arrives here already read. Consumed once,
@@ -45,6 +47,7 @@ export default function App({ handoff, onLeave }) {
     setResult(null)
     setSelectedId(null)
     setEdits([])
+    setFixesApplied(false)
     setError(null)
   }
 
@@ -84,11 +87,15 @@ export default function App({ handoff, onLeave }) {
       const body = await fetchProfile(text, { delimiter: parsed.delimiter })
       setColumnProfile(body)
       const names = new Set(body.columns.map((c) => c.name))
-      setMapping({
+      const chosen = {
         label: names.has(hints.label) ? hints.label : null,
         split: names.has(hints.split) ? hints.split : null,
-      })
-      setStage('mapping')
+      }
+      setMapping(chosen)
+      // Straight into the audit. A label picker in front of the results is a
+      // form standing between someone and the thing they came for, and twelve
+      // of the fifteen checks do not need one.
+      await run(text, chosen)
     } catch (err) {
       setError(messageFor(err))
       setStage('empty')
@@ -103,17 +110,20 @@ export default function App({ handoff, onLeave }) {
     [dataset, edits],
   )
 
-  const run = async (csv = dataset.csv, keepEdits = false) => {
+  const run = async (csv, map) => {
+    const source = typeof csv === 'string' ? csv : dataset.csv
+    const chosen = map ?? mapping
     setStage('auditing')
     setError(null)
     try {
-      const body = await audit(csv, {
-        labelColumn: mapping.label,
-        splitColumn: mapping.split,
+      const body = await audit(source, {
+        labelColumn: chosen.label,
+        splitColumn: chosen.split,
       })
       setResult(body)
       setSelectedId(body.issues[0]?.id ?? null)
-      if (!keepEdits) setEdits([])
+      setEdits([])
+      setFixesApplied(false)
       setStage('results')
     } catch (err) {
       setError(messageFor(err))
@@ -122,6 +132,12 @@ export default function App({ handoff, onLeave }) {
   }
 
   const addEdit = (edit) => setEdits((log) => log.concat(edit))
+
+  const fixes = result ? safeFixes(result.issues) : []
+  const applyFixes = () => {
+    setEdits((log) => log.concat(fixes))
+    setFixesApplied(true)
+  }
   const undo = () => setEdits((log) => log.slice(0, -1))
 
   const save = (contents, suffix, type) => {
@@ -156,7 +172,7 @@ export default function App({ handoff, onLeave }) {
     const cleaned = toCsv(current.columns, current.rows, dataset.delimiter)
     setDataset({ ...dataset, csv: cleaned, columns: current.columns, rows: current.rows })
     setEdits([])
-    run(cleaned)
+    run(cleaned, mapping)
   }
 
   const selected = useMemo(
@@ -212,6 +228,28 @@ export default function App({ handoff, onLeave }) {
         {stage === 'results' && result && (
           <>
             <Summary dataset={current} summary={result.summary} edits={edits.length} />
+
+            {fixes.length > 0 && !fixesApplied && (
+              <div className="autofix">
+                <div>
+                  <strong className="mono">
+                    {fixes.length} {fixes.length === 1 ? 'fix can' : 'fixes can'} be applied safely
+                  </strong>
+                  <ul>
+                    {describeFixes(fixes).map((line) => (
+                      <li key={line}>{line}</li>
+                    ))}
+                  </ul>
+                  <p className="autofix-note">
+                    Nothing here needs a decision from you. Anything that does — the leaked
+                    column, the contaminated rows, the model's relabelling — is left alone.
+                  </p>
+                </div>
+                <button className="button-primary" onClick={applyFixes}>
+                  Apply {fixes.length === 1 ? 'it' : 'them'}
+                </button>
+              </div>
+            )}
 
             {edits.length === 0 && (
               <div className="actions" style={{ marginTop: -4 }}>

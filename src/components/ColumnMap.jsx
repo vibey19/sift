@@ -33,13 +33,14 @@ export default function ColumnMap({ profile, label, split, onChange, onRun, onRe
           <button onClick={onReset} disabled={busy}>Use a different file</button>
           {/* Wrapped, or React hands the click event in as the first argument. */}
           <button className="button-primary" onClick={() => onRun()} disabled={busy}>
-            {busy ? 'Auditing...' : 'Run the audit'}
+            {busy ? 'Auditing...' : 'Run again'}
           </button>
         </div>
       </div>
       {!label && (
         <p className="label" style={{ marginTop: 14, marginBottom: 0 }}>
-          Without a label column, 12 of the 15 checks still run.
+          Twelve of the fifteen checks have already run. Naming a label column adds the
+          other three: mislabelled rows, leaked columns and train/test contamination.
         </p>
       )}
     </div>

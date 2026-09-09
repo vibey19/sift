@@ -9,43 +9,44 @@ const GITHUB = 'https://github.com/vibey19/sift'
 
 const CATCHES = [
   {
-    tag: 'Row level',
-    title: 'Mislabelled rows',
+    tag: 'Fixed in one click',
+    title: 'The tedious half',
     body:
-      'Every row is scored by a model that never saw it during training, using 5-fold ' +
-      'cross-validated predictions. Where the model is confident and disagrees with the ' +
-      'label on file, you get a flag, ranked by how badly the two disagree.',
+      'Exact duplicates, four spellings of the same category, columns that never ' +
+      'vary, rows that are more than half empty. None of it needs a decision from ' +
+      'you, so Sift offers to fix all of it at once and shows you exactly what it did.',
   },
   {
-    tag: 'Column level',
-    title: 'Leaked features',
+    tag: 'Your call',
+    title: 'Leaked columns',
     body:
-      'A single column that predicts your target at 98% accuracy is not a strong feature. ' +
-      'It is the answer, copied into the input. Sift tests every column on its own and ' +
-      'tells you which ones are too good to be true.',
+      'A column that predicts your target on its own is not a strong feature. It is ' +
+      'the answer, copied into the input, usually written after the outcome was ' +
+      'known. Sift tests every column separately and tells you which are too good ' +
+      'to be true. Dropping one is your decision, not its.',
   },
   {
-    tag: 'Dataset level',
+    tag: 'Your call',
     title: 'Train/test contamination',
     body:
-      'Rows that appear on both sides of your split, exactly or nearly. This is the one ' +
-      'that turns a 0.97 validation score into a 0.61 in production, with nothing in the ' +
-      'training curve to warn you.',
+      'Rows sitting on both sides of your split, exactly or nearly. This is the one ' +
+      'that turns a 0.97 validation score into a 0.61 in production, with nothing in ' +
+      'the training curve to warn you.',
   },
   {
-    tag: 'Everywhere else',
-    title: 'Duplicates and dirty categories',
+    tag: 'Your call',
+    title: 'Mislabelled rows',
     body:
-      'Near-duplicate rows, Positive filed separately from positive, columns that are 99% ' +
-      'a single value, and outliers measured by median absolute deviation rather than ' +
-      'standard deviation, so extreme values cannot hide inside their own threshold.',
+      'Every row is scored by a model that never saw it during training. Where that ' +
+      'model is confident and disagrees with the label on file, you get a flag, ' +
+      'ranked by how badly the two disagree.',
   },
 ]
 
 const STEPS = [
-  ['01', 'Upload a CSV', 'Or load a sample. The file is parsed in your browser and never leaves it except to be audited.'],
-  ['02', 'Pick your label column', 'That switches on the mislabel, leakage and contamination checks. Twelve of the fifteen run without one.'],
-  ['03', 'Review and export', 'Drop rows, drop columns, normalise spellings, then download the cleaned file.'],
+  ['01', 'Drop in a CSV', 'It parses in your browser and is audited straight away. No sign-up, no configuration, no waiting for a job.'],
+  ['02', 'Apply the safe fixes', 'One button for everything unambiguous. Every edit is listed and every one can be undone.'],
+  ['03', 'Decide the rest, export', 'Work through what needs judgement, then download the cleaned CSV and a Markdown report of what was wrong.'],
 ]
 
 const LIMITS = [
@@ -92,12 +93,13 @@ export default function Landing({ onOpen }) {
 
       <header className="wrap hero">
         <div>
-          <p className="eyebrow">Dataset quality auditor</p>
-          <h1>Find the rows that are quietly ruining your model.</h1>
+          <p className="eyebrow">CSV cleaning, without the notebook</p>
+          <h1>Stop rewriting the same cleaning script for every dataset.</h1>
           <p className="lede">
-            Sift audits any CSV for mislabelled rows, leaked features, train/test contamination
-            and near-duplicates. Nothing is stored — your file is audited by a stateless
-            function and forgotten the moment the response is sent.
+            Drop in a CSV. Sift runs fifteen checks, tells you what is wrong in plain English,
+            and fixes the safe ones in one click. The rest it hands to you with the row numbers
+            and a reason. Nothing is stored — your file is audited by a stateless function and
+            forgotten the moment the response is sent.
           </p>
           <div className="btn-row" style={{ marginTop: 28 }}>
             <a className="btn" href="#demo">See a sample run</a>
@@ -111,8 +113,8 @@ export default function Landing({ onOpen }) {
       <div className="strip">
         <div className="strip-inner">
           <span>15 checks</span>
-          <span>no API keys</span>
-          <span>no model downloads</span>
+          <span>one-click fixes</span>
+          <span>no sign-up</span>
           <span>nothing stored</span>
         </div>
       </div>
@@ -120,17 +122,19 @@ export default function Landing({ onOpen }) {
       <section className="section">
         <div className="wrap prose" data-reveal>
           <p className="eyebrow">The problem</p>
-          <h2>Usually the model is fine.</h2>
+          <h2>You already know how to clean data.</h2>
           <p>
-            Most model debugging starts with the model. A column that leaks the answer, a few
-            hundred rows labelled by someone having a bad day, the same records sitting in both
-            train and test — these produce validation numbers that look excellent and collapse
-            the moment the thing meets real data.
+            That is the annoying part. Every new dataset means the same half hour: read it in,
+            check the dtypes, count the nulls, find the duplicates, discover that the category
+            column has four spellings of the same value, write the same six lines you wrote
+            last month, lose the notebook, write them again for the next file.
           </p>
           <p>
-            None of it is hard to find once you know to look. It is just tedious, which is why
-            most people never look. Sift does the looking, and it does it with scikit-learn and
-            pandas rather than an API call and a hope.
+            None of it is difficult. It is just repetitive enough that people skip it, and the
+            things worth catching hide behind the boring things. Sift does the repetitive part
+            in one click, then spends the rest of its time on the faults a quick pass would
+            never surface — a column that leaks your target, records sitting in both train and
+            test, rows labelled by someone having a bad day.
           </p>
         </div>
       </section>
@@ -140,7 +144,7 @@ export default function Landing({ onOpen }) {
       <section className="section" id="catches">
         <div className="wrap" data-reveal>
           <p className="eyebrow">What it catches</p>
-          <h2>Fifteen checks, four of which matter most.</h2>
+          <h2>Fifteen checks. It fixes some and asks about the rest.</h2>
           <div className="grid-2" style={{ marginTop: 34 }}>
             {CATCHES.map((item) => (
               <article className="card" key={item.title}>
@@ -211,7 +215,7 @@ export default function Landing({ onOpen }) {
 
       <section className="section">
         <div className="wrap" style={{ textAlign: 'center' }}>
-          <h2 style={{ fontSize: 38, marginBottom: 26 }}>Audit a dataset before you train on it.</h2>
+          <h2 style={{ fontSize: 38, marginBottom: 26 }}>Clean the next one in ten seconds.</h2>
           <a
             className="btn btn-primary"
             href="/app"
