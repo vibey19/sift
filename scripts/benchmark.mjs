@@ -85,10 +85,12 @@ function score(name) {
       colTotal += 1
       const a = Number(String(got).replace(/,/g, ''))
       const b = Number(String(want).replace(/,/g, ''))
+      // Compared exactly, not case-insensitively. Lowercasing both sides hides
+      // exactly the faults the case checks exist to catch.
       const match =
         Number.isFinite(a) && Number.isFinite(b)
           ? Math.abs(a - b) < 1e-6
-          : norm(got) === norm(want)
+          : String(got).trim() === String(want).trim()
       if (match) colSame += 1
     }
     compared += colTotal

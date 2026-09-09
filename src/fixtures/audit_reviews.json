@@ -694,6 +694,7 @@
       "column": "sentiment",
       "detail": "' negative', 'Negative', 'negative' are the same value written differently, and every model will treat them as separate categories. 60 rows use a non-canonical spelling.",
       "evidence": {
+        "auto_apply": true,
         "canonical": {
           "negative": [
             " negative",
@@ -710,7 +711,8 @@
             "Positive",
             "positive"
           ]
-        }
+        },
+        "contested": {}
       },
       "id": "inconsistent:sentiment",
       "row_indices": [

@@ -8,7 +8,7 @@ from scipy.stats import chi2_contingency
 from sklearn.model_selection import StratifiedKFold, cross_val_score
 from sklearn.tree import DecisionTreeClassifier
 
-from .. import config, profile as prof
+from .. import config, formats, profile as prof
 from ..issue import HIGH, LOW, MEDIUM, make_issue, pct
 
 
@@ -89,6 +89,19 @@ def _sentinel_values(df: pd.DataFrame, profiles: list[dict]) -> list[dict]:
             if kind in (prof.NUMERIC, prof.DATETIME)
             else "Left in place they read as a category rather than as an absence"
         )
+        share = total / len(df) if len(df) else 0.0
+        modal = str(values.value_counts().index[0]) if len(values) else ""
+        automatic = (
+            share <= config.SENTINEL_AUTO_MAX_SHARE
+            and prof.normalise_text(modal) not in config.SENTINEL_TOKENS
+        )
+        if not automatic:
+            consequence += (
+                f". At {total} of {len(df)} rows this is too much of the column to blank "
+                "without asking: a marker that common is often a real answer rather than a "
+                "missing one, so this one is left for you"
+            )
+
         issues.append(
             make_issue(
                 id=f"sentinel:{col}",
@@ -104,7 +117,7 @@ def _sentinel_values(df: pd.DataFrame, profiles: list[dict]) -> list[dict]:
                 column=col,
                 row_indices=df.index[hits],
                 suggested_action="blank_values",
-                evidence={"forms": forms, "count": total},
+                evidence={"forms": forms, "count": total, "auto_apply": automatic},
             )
         )
     return issues
@@ -305,6 +318,13 @@ def _categorical_inconsistency(df: pd.DataFrame, profiles: list[dict]) -> list[d
         values = prof.present(df[col])
         if values.empty:
             continue
+        # A column of Y, yes, TRUE, 1 belongs to C17, which knows the spellings
+        # mean two things and writes them one way. Left to this check as well,
+        # both fire, and whichever runs second wins: C17 settles on "false" and
+        # then this merges it back into "FALSE" because that was more common in
+        # the original column.
+        if float(values.map(formats.parse_boolean).notna().mean()) >= config.BOOLEAN_MIN_SHARE:
+            continue
         groups: dict[str, set] = {}
         for raw in values.unique():
             groups.setdefault(prof.normalise_text(raw), set()).add(raw)
@@ -313,12 +333,50 @@ def _categorical_inconsistency(df: pd.DataFrame, profiles: list[dict]) -> list[d
             continue
 
         counts = values.value_counts()
-        rows, mapping = [], {}
+        safe, contested, rows = {}, {}, []
         for key, raws in collisions.items():
             canonical = max(raws, key=lambda r: counts.get(r, 0))
-            mapping[canonical] = sorted(raws)
-            rows.extend(df.index[values.isin(raws - {canonical}).reindex(df.index, fill_value=False)])
-        example = next(iter(mapping.items()))
+            top = int(counts.get(canonical, 0)) or 1
+            mergeable, disputed = set(), set()
+
+            for raw in raws - {canonical}:
+                # Padding is never meaningful.
+                if str(raw).strip() == str(canonical).strip():
+                    mergeable.add(raw)
+                    continue
+                # Case can only be carrying meaning in something code-shaped.
+                text = str(raw).strip()
+                code_shaped = (not any(c.isspace() for c in text)) and (
+                    any(c.isdigit() for c in text) or len(text) <= config.CATEGORY_CODE_MAX_LENGTH
+                )
+                rare = int(counts.get(raw, 0)) / top <= config.CATEGORY_MERGE_MAX_VARIANT_RATIO
+                (mergeable if rare or not code_shaped else disputed).add(raw)
+
+            if mergeable:
+                safe[canonical] = sorted({canonical, *mergeable})
+                rows.extend(
+                    df.index[values.isin(mergeable).reindex(df.index, fill_value=False)]
+                )
+            if disputed:
+                contested[canonical] = sorted({canonical, *disputed})
+
+        example = next(iter({**safe, **contested}.items()))
+        detail = (
+            f"{', '.join(repr(v) for v in example[1])} are the same value written differently, "
+            "and every model will treat them as separate categories. "
+        )
+        if contested:
+            balanced = next(iter(contested.items()))
+            detail += (
+                f"{len(contested)} of these are left alone: "
+                f"{', '.join(repr(v) for v in balanced[1])} appear about as often as each other, "
+                "and a spelling used that consistently is more likely to be a distinction than "
+                "a slip. Merging them would destroy it, so that is your call rather than a "
+                "one-click fix."
+            )
+        else:
+            detail += f"{len(rows)} rows use a non-canonical spelling."
+
         issues.append(
             make_issue(
                 id=f"inconsistent:{col}", check="C5_categorical_inconsistency",
@@ -326,13 +384,13 @@ def _categorical_inconsistency(df: pd.DataFrame, profiles: list[dict]) -> list[d
                 title=f"'{col}' has {len(collisions)} value spelled more than one way"
                 if len(collisions) == 1
                 else f"'{col}' has {len(collisions)} values spelled more than one way",
-                detail=(
-                    f"{', '.join(repr(v) for v in example[1])} are the same value written "
-                    f"differently, and every model will treat them as separate categories. "
-                    f"{len(rows)} rows use a non-canonical spelling."
-                ),
+                detail=detail,
                 column=col, row_indices=rows, suggested_action="normalize_values",
-                evidence={"canonical": {k: v for k, v in mapping.items()}},
+                evidence={
+                    "canonical": safe,
+                    "contested": contested,
+                    "auto_apply": bool(safe),
+                },
             )
         )
     return issues

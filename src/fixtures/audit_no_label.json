@@ -2878,6 +2878,7 @@
       "column": "plan",
       "detail": "' Premium ', 'PREMIUM', 'Premium', 'premium' are the same value written differently, and every model will treat them as separate categories. 91 rows use a non-canonical spelling.",
       "evidence": {
+        "auto_apply": true,
         "canonical": {
           "Premium": [
             " Premium ",
@@ -2885,7 +2886,8 @@
             "Premium",
             "premium"
           ]
-        }
+        },
+        "contested": {}
       },
       "id": "inconsistent:plan",
       "row_indices": [
@@ -2992,6 +2994,7 @@
       "column": "discount_pct",
       "detail": "90 cells in 'discount_pct' hold a word meaning no value rather than a value. Left in place the column will not load as numeric, and every tool downstream treats them differently. Blanking them makes the gap explicit.",
       "evidence": {
+        "auto_apply": true,
         "count": 90,
         "forms": [
           "none",
@@ -3214,6 +3217,7 @@
       "column": null,
       "detail": "60 rows fall into 30 groups of identical records, 30 of them redundant. Duplicates weight those records more heavily during training and inflate any score computed over them.",
       "evidence": {
+        "auto_apply": true,
         "n_groups": 30,
         "n_redundant": 30
       },

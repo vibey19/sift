@@ -178,6 +178,11 @@ export function safeFixes(issues = []) {
   const edits = []
   for (const issue of issues) {
     if (issue.column && contested.has(issue.column)) continue
+    // Several checks are certain about what they found and uncertain about what
+    // should happen to it: a marker that might be a real answer, spellings that
+    // might be a real distinction, dates that fit two readings, rows that might
+    // be separate events. They say so, and the one-click button listens.
+    if (issue.evidence?.auto_apply === false) continue
     const build = SAFE[issue.check]
     if (!build) continue
     // C1 fires on every column with gaps, but only a category can be labelled

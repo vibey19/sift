@@ -8,7 +8,7 @@ from .. import config, profile as prof
 from ..issue import HIGH, LOW, MEDIUM, make_issue, pct
 
 
-def _exact_duplicates(df: pd.DataFrame) -> list[dict]:
+def _exact_duplicates(df: pd.DataFrame, profiles: list[dict] | None = None) -> list[dict]:
     if df.empty:
         return []
     duplicated = df.duplicated(keep=False)
@@ -17,18 +17,38 @@ def _exact_duplicates(df: pd.DataFrame) -> list[dict]:
     rows = df.index[duplicated]
     n_groups = int(df[duplicated].groupby(list(df.columns), dropna=False).ngroups)
     extra = len(rows) - n_groups
+
+    # Two identical rows are the same record if something in them says which
+    # record it is. Without an identifier they may be two things that genuinely
+    # happened and happened to match: forty identical coffee sales are forty
+    # sales. A handful is still safe to collapse; a large share is not.
+    has_identifier = any(
+        p["inferred_type"] == prof.ID_LIKE for p in (profiles or [])
+    )
+    share = extra / len(df)
+    automatic = has_identifier or share <= config.DEDUPE_AUTO_MAX_SHARE
+    caveat = (
+        ""
+        if automatic
+        else (
+            f" {pct(share)} of the file is repetition and no column identifies a row, so these "
+            "may be separate events that look alike rather than the same event recorded twice. "
+            "Removing them is left for you."
+        )
+    )
     return [
         make_issue(
             id="exact_duplicates", check="D1_exact_duplicates", scope="dataset",
             severity=MEDIUM,
             title=f"{len(rows)} rows are exact duplicates",
             detail=(
-                f"{len(rows)} rows fall into {n_groups} groups of identical records, "
+                f"{len(rows)} rows fall into {n_groups} "
+                f"{'group' if n_groups == 1 else 'groups'} of identical records, "
                 f"{extra} of them redundant. Duplicates weight those records more heavily "
-                "during training and inflate any score computed over them."
+                "during training and inflate any score computed over them." + caveat
             ),
             row_indices=rows, suggested_action="dedupe",
-            evidence={"n_groups": n_groups, "n_redundant": extra},
+            evidence={"n_groups": n_groups, "n_redundant": extra, "auto_apply": automatic},
         )
     ]
 
@@ -288,6 +308,6 @@ def run(
     near, skip_near = _near_duplicates(df, profiles, split_column)
     overlap, skip_overlap = _train_test_overlap(df, profiles, split_column)
     return (
-        [*_exact_duplicates(df), *_class_imbalance(df, label_column), *near, *overlap],
+        [*_exact_duplicates(df, profiles), *_class_imbalance(df, label_column), *near, *overlap],
         [*skip_near, *skip_overlap],
     )

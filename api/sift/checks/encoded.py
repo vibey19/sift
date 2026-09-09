@@ -75,6 +75,9 @@ def _mixed_dates(df: pd.DataFrame, profiles: list[dict]) -> list[dict]:
             continue
 
         dayfirst = formats.needs_dayfirst(values)
+        # Numeric dates where no first number exceeds 12 fit both readings.
+        numeric_dates = (styles == "numeric").sum()
+        ambiguous = bool(numeric_dates) and not dayfirst
         rewritten = values.map(lambda v: formats.parse_date(v, dayfirst))
         changed = values[rewritten.notna() & (rewritten != values)]
         if len(changed) < config.FORMAT_MIN_VALUES:
@@ -102,8 +105,16 @@ def _mixed_dates(df: pd.DataFrame, profiles: list[dict]) -> list[dict]:
                     )
                     + (
                         " Days above 12 appear in the first position, so the numeric dates are "
-                        "day-first."
+                        "day-first and there is nothing to decide."
                         if dayfirst
+                        else ""
+                    )
+                    + (
+                        f" No first number in the {numeric_dates} numeric dates exceeds 12, so "
+                        "01/02/2023 could be the first of February or the second of January and "
+                        "the file does not say which. Rewriting them would be a coin flip, so "
+                        "this is left for you: apply it if you know the convention."
+                        if ambiguous
                         else ""
                     )
                 ),
@@ -113,6 +124,7 @@ def _mixed_dates(df: pd.DataFrame, profiles: list[dict]) -> list[dict]:
                 evidence={
                     "styles": {str(k): int(v) for k, v in seen.items()},
                     "dayfirst": bool(dayfirst),
+                    "auto_apply": not ambiguous,
                 },
             )
         )

@@ -211,3 +211,29 @@ OUT_OF_BAND_MAX_SHARE = 0.25
 # How far from the middle, in median absolute deviations, before a repeated
 # exact value stops being a reading and starts being a code.
 OUT_OF_BAND_MIN_DISTANCE = 12.0
+
+# --- when a fix stops being automatic ----------------------------------------
+# Several checks are certain about what they found and uncertain about what to
+# do with it. Those set auto_apply=False in their evidence: the finding is still
+# reported with its rows and its reasoning, but the one-click button leaves it
+# for the user, because applying it unasked would be a guess wearing the
+# clothes of a correction.
+
+# Case is presentational in a word and can be load-bearing in a code. "FINLAND"
+# and "Finland" are one country however evenly they are split, because a country
+# name is not a code. "BRCA1" and "brca1" in equal numbers are two genes.
+#
+# So a variant is merged unless it is code-shaped and common enough that it does
+# not look like a slip: no spaces, and either short or carrying digits.
+CATEGORY_CODE_MAX_LENGTH = 4
+# Relative to the spelling it would be merged into. A tenth as common is a typo;
+# as common is a decision someone made.
+CATEGORY_MERGE_MAX_VARIANT_RATIO = 0.25
+
+# A marker that covers a quarter of a column is likely an answer rather than an
+# absence: "not applicable" is a real response to "reason for return".
+SENTINEL_AUTO_MAX_SHARE = 0.25
+
+# Identical rows in a table with no identifier may be genuine repeat events.
+# Forty identical coffee sales are forty sales.
+DEDUPE_AUTO_MAX_SHARE = 0.10

@@ -188,12 +188,22 @@ def infer_type(s: pd.Series, n_rows: int) -> str:
     # Uniqueness is measured over the values that are actually there. A column
     # that is 40% blank but distinct wherever it is filled is still an id, and
     # dividing by the row count would hide that.
+    # A column of dates is nearly all distinct by nature, and the identifier
+    # test runs first, so one row per day or per timestamp would be read as an
+    # id and skipped by every check that cares about dates.
+    parsed_dates = as_datetime(s)
+    is_dates = (
+        not parsed_dates.empty
+        and float(parsed_dates.notna().mean()) > config.DATETIME_PARSE_FRACTION
+    )
+
     unique_share = n_unique / len(values) if len(values) else 0.0
     # Free text is near-unique by nature, so uniqueness alone would classify
     # every review body as an identifier. An id is a short token, not a sentence.
     if (
         unique_share > config.ID_UNIQUE_FRACTION
         and not looks_continuous
+        and not is_dates
         and mean_tokens < config.TEXT_MIN_MEAN_TOKENS
     ):
         return ID_LIKE
@@ -201,8 +211,7 @@ def infer_type(s: pd.Series, n_rows: int) -> str:
     if n_unique == 2 and set(values.str.strip().str.lower().unique()) <= _BOOLEAN_VALUES:
         return BOOLEAN
 
-    parsed = as_datetime(s)
-    if not parsed.empty and float(parsed.notna().mean()) > config.DATETIME_PARSE_FRACTION:
+    if is_dates:
         return DATETIME
 
     if numeric_share > config.NUMERIC_PARSE_FRACTION:
