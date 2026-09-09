@@ -6,6 +6,10 @@
 
 const CANDIDATES = [',', '\t', ';', '|']
 const SAMPLE_LINES = 20
+// A preamble longer than this is not a preamble, it is the file.
+const MAX_PREAMBLE = 12
+// A header can contain a blank name, but not mostly blank names.
+const MIN_FILLED_HEADER = 0.5
 
 function splitLines(text) {
   const lines = []
@@ -98,4 +102,49 @@ export function normaliseHeaders(raw) {
     names.push(name)
   })
   return names
+}
+
+// How many fields the table has, ignoring anything sitting above it. Taking the
+// most common count across the whole file breaks both ways: a file with two
+// comment lines and two data lines has no majority, and one over-long row would
+// let that row widen the table. So each of the first few lines is tried as the
+// header, and the first whose count matches what most of the lines below it do
+// is the table. Failing that, the first line is the header.
+export function fieldWidth(text, delimiter) {
+  const counts = splitLines(text)
+    .filter((line) => line.trim())
+    .map((line) => countOutsideQuotes(line, delimiter) + 1)
+  if (!counts.length) return 1
+
+  const limit = Math.min(counts.length - 1, MAX_PREAMBLE)
+  for (let index = 0; index < limit; index += 1) {
+    const below = counts.slice(index + 1, index + 1 + SAMPLE_LINES)
+    if (!below.length) break
+    const tally = new Map()
+    for (const c of below) tally.set(c, (tally.get(c) ?? 0) + 1)
+    let modal = 0
+    let modalTimes = 0
+    for (const [value, times] of tally) {
+      if (times > modalTimes || (times === modalTimes && value > modal)) {
+        modal = value
+        modalTimes = times
+      }
+    }
+    if (counts[index] === modal) return modal
+  }
+  return counts[0]
+}
+
+// Index of the first row shaped like a header. A spreadsheet export often opens
+// with a title, a generated-on line and a blank; a hand-maintained file often
+// opens with comments. All of them are narrower or emptier than the table
+// underneath, which tells them apart without a rule for each.
+export function findHeader(rows, width) {
+  const limit = Math.min(rows.length, MAX_PREAMBLE)
+  for (let index = 0; index < limit; index += 1) {
+    const row = rows[index]
+    const filled = row.filter((cell) => String(cell ?? '').trim()).length
+    if (row.length >= width && filled / Math.max(width, 1) > MIN_FILLED_HEADER) return index
+  }
+  return 0
 }

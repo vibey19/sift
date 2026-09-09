@@ -152,6 +152,14 @@ const SAFE = {
     },
   ],
 
+  D5_summary_row: (issue) => [
+    {
+      op: DROP_ROWS,
+      rowIndices: issue.row_indices,
+      label: 'drop the totals row at the bottom, which is not a record',
+    },
+  ],
+
   C1_sparse_rows: (issue) => [
     {
       op: DROP_ROWS,

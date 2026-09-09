@@ -25,6 +25,10 @@ TEXT = "text"
 CATEGORICAL = "categorical"
 
 _BOOLEAN_VALUES = {"0", "1", "true", "false", "yes", "no", "y", "n", "t", "f"}
+# 14:30:00 is a time of day or an elapsed duration, and pandas reads it as that
+# time today. Either way it is not a date, and treating it as one invents a date
+# that is not in the file and changes every day the file is opened.
+_TIME_ONLY = re.compile(r"^\d{1,4}:\d{1,2}(:\d{1,2}(\.\d+)?)?$")
 # A date needs a separator. Without this guard pandas happily reads 20240101 and
 # even bare years as timestamps, and every integer column becomes a date.
 _DATE_HINTS = ("-", "/", ":")
@@ -46,9 +50,16 @@ def load_csv(text: str, delimiter: str | None = None) -> pd.DataFrame:
     if delimiter is None:
         delimiter = parsing.detect_delimiter(text)
 
-    # Read headerless and name the columns here. Left to pandas, a repeated
-    # header becomes "a.1" and a blank one "Unnamed: 1", neither of which the
-    # browser would produce, and a fix naming such a column would silently miss.
+    # Line endings are normalised first. pandas' python engine does not treat a
+    # lone carriage return as a line ending, and older Mac exports still use one.
+    # Splitting is quote-aware, so a carriage return inside a quoted field is
+    # left where it is, which is what the browser does too.
+    text = "\n".join(parsing.split_lines(text))
+    width = parsing.field_width(text, delimiter)
+
+    # Read with neither a header nor a column count of pandas' choosing. The
+    # header is found below, because line one is often a title, a generated-on
+    # stamp or a comment, and a spreadsheet export usually has all three.
     #
     # Everything arrives as a string and this module decides what is missing.
     # pandas' default na_values would turn "N/A" and "none" into NaN, which is
@@ -57,30 +68,25 @@ def load_csv(text: str, delimiter: str | None = None) -> pd.DataFrame:
         delimiter=delimiter,
         dtype=str,
         header=None,
+        names=range(width),
         keep_default_na=False,
         na_values=[],
         skip_blank_lines=True,
+        engine="python",
+        on_bad_lines=_pad_or_trim(width),
     )
     try:
         raw = pd.read_csv(io.StringIO(text), **options)
-    except pd.errors.EmptyDataError:
+    except (pd.errors.EmptyDataError, StopIteration):
         return pd.DataFrame()
-    except pd.errors.ParserError:
-        header = next(line for line in parsing.split_lines(text) if line.strip())
-        width = parsing.count_outside_quotes(header, delimiter) + 1
-        raw = pd.read_csv(
-            io.StringIO(text),
-            engine="python",
-            on_bad_lines=_pad_or_trim(width),
-            names=range(width),
-            **{k: v for k, v in options.items() if k != "header"},
-        )
 
     if raw.empty:
         return pd.DataFrame()
 
-    frame = raw.iloc[1:].reset_index(drop=True)
-    frame.columns = parsing.normalise_headers(list(raw.iloc[0]))
+    rows = raw.fillna("").astype(str).values.tolist()
+    header_at = parsing.find_header(rows, width)
+    frame = raw.iloc[header_at + 1:].reset_index(drop=True)
+    frame.columns = parsing.normalise_headers(list(raw.iloc[header_at]))
     return frame
 
 
@@ -140,10 +146,19 @@ def as_numeric(s: pd.Series) -> pd.Series:
     return pd.to_numeric(present(s).map(_degroup), errors="coerce")
 
 
+def is_time_only(s: pd.Series) -> bool:
+    values = present(s)
+    if values.empty:
+        return False
+    return float(values.str.strip().str.match(_TIME_ONLY).mean()) > 0.9
+
+
 def as_datetime(s: pd.Series) -> pd.Series:
     values = present(s)
     if values.empty:
         return pd.Series(dtype="datetime64[ns]")
+    if is_time_only(values):
+        return pd.Series(index=values.index, dtype="datetime64[ns]")
     if not values.str.contains("|".join(map(pd.io.common.re.escape, _DATE_HINTS))).any():
         return pd.Series(index=values.index, dtype="datetime64[ns]")
     return pd.to_datetime(values, errors="coerce", format="mixed")

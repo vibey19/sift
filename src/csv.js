@@ -3,7 +3,7 @@
 // Follows RFC 4180: fields may be quoted, quotes escape by doubling, and a quoted
 // field may contain the delimiter or a newline.
 
-import { detectDelimiter, normaliseHeaders } from './parsing.js'
+import { detectDelimiter, fieldWidth, findHeader, normaliseHeaders } from './parsing.js'
 
 const QUOTE = '"'
 
@@ -71,9 +71,16 @@ export function parseCsv(text, { delimiter } = {}) {
 
   if (!rows.length) return { columns: [], rows: [], delimiter: sep }
 
-  const columns = normaliseHeaders(rows[0])
-  const width = columns.length
-  const body = rows.slice(1).map((cells) => {
+  // Line one is often a title, a generated-on stamp or a comment. The header is
+  // the first row shaped like one, and anything above it is dropped.
+  const width = fieldWidth(source, sep)
+  const headerAt = findHeader(rows, width)
+  const columns = normaliseHeaders(
+    rows[headerAt].length >= width
+      ? rows[headerAt].slice(0, width)
+      : rows[headerAt].concat(Array(width - rows[headerAt].length).fill('')),
+  )
+  const body = rows.slice(headerAt + 1).map((cells) => {
     if (cells.length === width) return cells
     // Ragged rows are common in exports and are not worth rejecting a file over.
     // C1 will report the gaps that padding creates.

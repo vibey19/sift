@@ -237,3 +237,13 @@ SENTINEL_AUTO_MAX_SHARE = 0.25
 # Identical rows in a table with no identifier may be genuine repeat events.
 # Forty identical coffee sales are forty sales.
 DEDUPE_AUTO_MAX_SHARE = 0.10
+
+# --- D5 summary rows ---------------------------------------------------------
+# A row whose numbers are the sums of the column above it is a total, not a
+# record. Requires enough rows above for the sum to mean something.
+SUMMARY_MIN_ROWS = 5
+SUMMARY_TOLERANCE = 0.005
+# Words a totals row usually carries in its first text column.
+SUMMARY_WORDS = frozenset(
+    {"total", "totals", "sum", "subtotal", "grand total", "all", "overall", "sum:"}
+)

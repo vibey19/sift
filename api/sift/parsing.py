@@ -22,12 +22,21 @@ The rules:
 3. A header that is empty after trimming becomes column_N, numbered from 1.
 4. A repeated header keeps its first appearance and later ones gain _2, _3, and
    so on, until the name is unique.
+5. The header is the first row that is shaped like one: it has as many fields as
+   the file generally does, and more than half of them are filled. Rows above it
+   are a preamble and are dropped. That covers the title and generated-on lines
+   a spreadsheet export puts at the top, and comment lines, without needing a
+   rule for either.
 """
 
 from __future__ import annotations
 
 CANDIDATES = (",", "\t", ";", "|")
 SAMPLE_LINES = 20
+# A preamble longer than this is not a preamble, it is the file.
+MAX_PREAMBLE = 12
+# A header can contain a blank name, but not mostly blank names.
+MIN_FILLED_HEADER = 0.5
 
 
 def split_lines(text: str) -> list[str]:
@@ -120,3 +129,46 @@ def normalise_headers(raw: list[str]) -> list[str]:
         seen[name] = seen.get(name, 1)
         names.append(name)
     return names
+
+
+def field_width(text: str, delimiter: str) -> int:
+    """How many fields the table has, ignoring anything sitting above it.
+
+    Taking the most common count across the whole file breaks both ways: a file
+    with two comment lines and two data lines has no majority, and a file with
+    one over-long row would let that row widen the table. So each of the first
+    few lines is tried as the header, and the first one whose count matches what
+    most of the lines below it do is the table. Failing that, the first line is
+    the header, because a header is what a first line usually is.
+    """
+    counts = [
+        count_outside_quotes(line, delimiter) + 1
+        for line in split_lines(text)
+        if line.strip()
+    ]
+    if not counts:
+        return 1
+
+    for index in range(min(len(counts) - 1, MAX_PREAMBLE)):
+        below = counts[index + 1 : index + 1 + SAMPLE_LINES]
+        if not below:
+            break
+        modal = max(set(below), key=lambda c: (below.count(c), c))
+        if counts[index] == modal:
+            return modal
+    return counts[0]
+
+
+def find_header(rows: list[list[str]], width: int) -> int:
+    """Index of the first row shaped like a header. 0 when nothing looks better.
+
+    A spreadsheet export often opens with a title, a generated-on line and a
+    blank, and a hand-maintained file often opens with comments. All of them are
+    narrower or emptier than the table underneath, which is enough to tell them
+    apart without a rule for each.
+    """
+    for index, row in enumerate(rows[:MAX_PREAMBLE]):
+        filled = sum(1 for cell in row if str(cell).strip())
+        if len(row) >= width and filled / max(width, 1) > MIN_FILLED_HEADER:
+            return index
+    return 0

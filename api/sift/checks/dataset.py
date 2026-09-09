@@ -53,6 +53,89 @@ def _exact_duplicates(df: pd.DataFrame, profiles: list[dict] | None = None) -> l
     ]
 
 
+def _summary_row(df: pd.DataFrame, profiles: list[dict]) -> list[dict]:
+    """A last row that totals the ones above it.
+
+    Spreadsheets grow one at the bottom and CSV exports carry it along. Read as
+    data it doubles every sum, shifts every mean and becomes the largest outlier
+    in the file.
+    """
+    if len(df) < config.SUMMARY_MIN_ROWS + 1:
+        return []
+    # Any column that reads as numbers, not only the ones typed that way. A
+    # column of distinct whole numbers is classified as an identifier, and a
+    # totals row still totals it.
+    numeric = [
+        p["name"]
+        for p in profiles
+        if p["inferred_type"] not in (prof.TEXT, prof.CONSTANT, prof.DATETIME)
+        and len(df[p["name"]])
+        and float(prof.as_numeric(df[p["name"]]).notna().mean()) > 0.9
+    ]
+    if not numeric:
+        return []
+
+    last = df.index[-1]
+    body = df.iloc[:-1]
+    matched, compared = [], 0
+    for col in numeric:
+        values = prof.as_numeric(body[col]).dropna()
+        # A totals row often leaves some columns blank: a unit price has no
+        # meaningful total. Those columns are skipped rather than crashed on.
+        claimed_cell = prof.as_numeric(df.loc[[last], col])
+        if values.empty or claimed_cell.empty:
+            continue
+        claimed = claimed_cell.iloc[0]
+        if pd.isna(claimed):
+            continue
+        compared += 1
+        total = float(values.sum())
+        if abs(total) < 1e-9:
+            continue
+        if abs(claimed - total) <= abs(total) * config.SUMMARY_TOLERANCE:
+            matched.append(col)
+
+    if not compared or not matched:
+        return []
+
+    # A label like "TOTAL" in a text column is corroboration, not the test. The
+    # arithmetic is the test, because plenty of totals rows are unlabelled.
+    labels = [
+        str(df.at[last, p["name"]]).strip()
+        for p in profiles
+        if p["inferred_type"] in (prof.CATEGORICAL, prof.TEXT, prof.ID_LIKE)
+    ]
+    labelled = any(l.lower() in config.SUMMARY_WORDS for l in labels if l)
+    named = next((l for l in labels if l.lower() in config.SUMMARY_WORDS), None)
+
+    return [
+        make_issue(
+            id="summary_row", check="D5_summary_row", scope="row", severity=MEDIUM,
+            title=(
+                "The last row totals the column above it"
+                if len(matched) == 1
+                else f"The last row totals {len(matched)} of the columns above it"
+            ),
+            detail=(
+                f"Row {last} holds the sum of {', '.join(repr(c) for c in matched[:3])} "
+                f"over the {len(body)} rows above"
+                + (f", and is labelled {named!r}" if named else "")
+                + ". A totals row read as data doubles every sum, shifts every average and "
+                "becomes the largest value in the file."
+            ),
+            column=None, row_indices=[last], suggested_action="drop_rows",
+            evidence={
+                "columns_matched": matched,
+                "columns_compared": compared,
+                "labelled": labelled,
+                # Every numeric column adding up, or a label saying so, is a
+                # total. One column out of several could be a coincidence.
+                "auto_apply": labelled or len(matched) == compared,
+            },
+        )
+    ]
+
+
 def _class_imbalance(df: pd.DataFrame, label_column: str | None) -> list[dict]:
     if not label_column or label_column not in df.columns:
         return []
@@ -308,6 +391,12 @@ def run(
     near, skip_near = _near_duplicates(df, profiles, split_column)
     overlap, skip_overlap = _train_test_overlap(df, profiles, split_column)
     return (
-        [*_exact_duplicates(df, profiles), *_class_imbalance(df, label_column), *near, *overlap],
+        [
+            *_exact_duplicates(df, profiles),
+            *_summary_row(df, profiles),
+            *_class_imbalance(df, label_column),
+            *near,
+            *overlap,
+        ],
         [*skip_near, *skip_overlap],
     )
