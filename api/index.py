@@ -1,3 +1,4 @@
+import logging
 import sys
 from pathlib import Path
 
@@ -9,12 +10,29 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import numpy
 import pandas
 import sklearn
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
 from sift import runner
 
 app = FastAPI(title="Sift", docs_url=None, redoc_url=None)
+
+
+@app.exception_handler(Exception)
+def unhandled(request: Request, exc: Exception) -> JSONResponse:
+    # A bare 500 tells the user nothing and tells whoever is debugging it less.
+    # The type and message are enough to act on and carry no data from the file.
+    logging.getLogger("sift").exception("unhandled error on %s", request.url.path)
+    return JSONResponse(
+        status_code=500,
+        content={
+            "detail": (
+                f"The audit failed with {type(exc).__name__}. This is a bug in Sift rather "
+                "than a problem with your file. Nothing was stored."
+            )
+        },
+    )
 
 
 class ProfileRequest(BaseModel):

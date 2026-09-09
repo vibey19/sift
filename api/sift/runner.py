@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import logging
+
+import numpy as np
 import pandas as pd
 
 from . import config, encode, profile as prof
@@ -9,8 +12,25 @@ from .checks import columns, dataset, rows
 from .issue import sort_issues
 
 
+log = logging.getLogger("sift")
+
+
 class InputTooLarge(ValueError):
     pass
+
+
+def _attempt(name: str, fn, fallback):
+    """Run a group of checks, and report a failure instead of losing the audit.
+
+    A dataset that breaks one check should still get the other fourteen. Before
+    this, an unhandled error anywhere in the pipeline returned a 500 and the user
+    got nothing back, including no clue which check was responsible.
+    """
+    try:
+        return fn()
+    except Exception as exc:  # noqa: BLE001 - deliberately broad, see docstring
+        log.exception("check group %s failed", name)
+        return fallback(f"{type(exc).__name__}: {exc}")
 
 
 def load(csv: str, delimiter: str | None = None) -> pd.DataFrame:
@@ -45,11 +65,31 @@ def audit(
     profiles = prof.profile_frame(df)
     # Built once and handed to D2, D4, C10 and R1. Encoding the frame separately
     # per check would let them disagree about whether two rows are the same.
-    encoded = encode.build(df, profiles, label_column, split_column)
+    encoded = _attempt(
+        "encode",
+        lambda: encode.build(df, profiles, label_column, split_column),
+        lambda why: encode.Encoded(np.empty((len(df), 0))),
+    )
 
-    dataset_issues, dataset_skipped = dataset.run(df, profiles, label_column, split_column)
-    column_issues, column_skipped = columns.run(df, profiles, label_column, split_column)
-    mislabels = rows.run(df, encoded, label_column)
+    dataset_issues, dataset_skipped = _attempt(
+        "dataset",
+        lambda: dataset.run(df, profiles, label_column, split_column),
+        lambda why: ([], [{"check": "dataset checks", "reason": f"failed to run - {why}"}]),
+    )
+    column_issues, column_skipped = _attempt(
+        "columns",
+        lambda: columns.run(df, profiles, label_column, split_column),
+        lambda why: ([], [{"check": "column checks", "reason": f"failed to run - {why}"}]),
+    )
+    mislabels = _attempt(
+        "rows",
+        lambda: rows.run(df, encoded, label_column),
+        lambda why: {
+            "issues": [],
+            "cv_accuracy": None,
+            "skipped": [{"check": "R1_mislabels", "reason": f"failed to run - {why}"}],
+        },
+    )
 
     issues = [*dataset_issues, *column_issues, *mislabels["issues"]]
     skipped = [*dataset_skipped, *column_skipped, *mislabels["skipped"]]

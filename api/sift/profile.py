@@ -30,20 +30,42 @@ _BOOLEAN_VALUES = {"0", "1", "true", "false", "yes", "no", "y", "n", "t", "f"}
 _DATE_HINTS = ("-", "/", ":")
 
 
+def _pad_or_trim(width: int):
+    # Rows with the wrong number of fields are ordinary in exported CSVs, and the
+    # browser already pads and trims them before showing a row count. The server
+    # has to agree, or a file the user can see on screen is rejected on upload.
+    def fix(fields: list[str]) -> list[str]:
+        if len(fields) < width:
+            return fields + [""] * (width - len(fields))
+        return fields[:width]
+
+    return fix
+
+
 def load_csv(text: str, delimiter: str | None = None) -> pd.DataFrame:
     if delimiter is None:
         delimiter = "\t" if "\t" in text.split("\n", 1)[0] else ","
+
     # Everything arrives as a string and this module decides what is missing.
     # pandas' default na_values would silently turn "N/A" and "none" into NaN,
     # which is exactly the evidence C4 and C5 exist to report.
-    return pd.read_csv(
-        io.StringIO(text),
+    options = dict(
         delimiter=delimiter,
         dtype=str,
         keep_default_na=False,
         na_values=[],
         skip_blank_lines=True,
     )
+    try:
+        return pd.read_csv(io.StringIO(text), **options)
+    except pd.errors.ParserError:
+        header = pd.read_csv(io.StringIO(text), nrows=0, **options)
+        return pd.read_csv(
+            io.StringIO(text),
+            engine="python",
+            on_bad_lines=_pad_or_trim(len(header.columns)),
+            **options,
+        )
 
 
 def normalise_text(value: str) -> str:

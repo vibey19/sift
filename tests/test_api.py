@@ -50,3 +50,59 @@ def test_oversized_input_is_rejected_with_413(monkeypatch):
 
 def test_unreadable_input_is_rejected_with_400():
     assert client.post("/api/profile", json={"csv": ""}).status_code == 400
+
+
+def test_ragged_rows_are_padded_not_rejected():
+    # The browser pads short rows and trims long ones before it shows a row
+    # count, so a file the user can see on screen must not be refused here.
+    body = client.post("/api/audit", json={"csv": "a,b,c\n1,2\n1,2,3,4\n5,6,7\n"})
+    assert body.status_code == 200
+    profile = client.post("/api/profile", json={"csv": "a,b,c\n1,2\n1,2,3,4\n5,6,7\n"}).json()
+    assert profile["n_rows"] == 3
+    assert profile["n_cols"] == 3
+
+
+def test_one_failing_check_does_not_lose_the_whole_audit(churn_csv, monkeypatch):
+    from sift.checks import columns as column_checks
+
+    def explode(*args, **kwargs):
+        raise RuntimeError("simulated failure")
+
+    monkeypatch.setattr(column_checks, "run", explode)
+    response = client.post("/api/audit", json={"csv": churn_csv, "label_column": "churned"})
+
+    assert response.status_code == 200, "a broken check should not 500 the request"
+    body = response.json()
+    # The dataset and row checks still ran and still reported.
+    assert body["issues"], "the surviving checks returned nothing"
+    reasons = {s["check"]: s["reason"] for s in body["summary"]["skipped_checks"]}
+    assert "column checks" in reasons
+    assert "RuntimeError" in reasons["column checks"]
+
+
+def test_an_unexpected_error_returns_a_readable_body(churn_csv, monkeypatch):
+    from sift import runner as runner_module
+
+    # This client returns the 500 rather than re-raising, which is what a browser
+    # sees. The default one re-raises and the handler never gets to answer.
+    forgiving = TestClient(app, raise_server_exceptions=False)
+    monkeypatch.setattr(runner_module, "profile_payload", lambda df: 1 / 0)
+    response = forgiving.post("/api/profile", json={"csv": churn_csv})
+    assert response.status_code == 500
+    detail = response.json()["detail"]
+    assert "ZeroDivisionError" in detail
+    assert "Nothing was stored" in detail
+
+
+def test_a_file_full_of_awkward_shapes_still_audits():
+    cases = [
+        "a,a,b\n1,2,3\n4,5,6\n",
+        "a,,b\n1,2,3\n4,5,6\n",
+        "a\n1\n2\n3\n",
+        "a,b\n,\n,\n",
+        "a,b,c\n",
+        "café,naïve\n1,2\n3,4\n",
+        'a,b\n"line\none",2\n"x",3\n',
+    ]
+    for csv in cases:
+        assert client.post("/api/audit", json={"csv": csv}).status_code == 200, csv[:24]
