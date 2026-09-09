@@ -3,5 +3,10 @@
     { "source": "/api/(.*)", "destination": "/api/index" },
     { "source": "/app", "destination": "/index.html" }
   ],
-  "functions": { "api/index.py": { "maxDuration": 60 } }
+  "functions": {
+    "api/index.py": {
+      "maxDuration": 60,
+      "excludeFiles": "{tests/**,scripts/**,src/**,public/**,dist/**,node_modules/**,docs/**,benchmark/**}"
+    }
+  }
 }
