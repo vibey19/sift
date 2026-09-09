@@ -5,9 +5,11 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 from scipy.stats import chi2_contingency
+from sklearn.model_selection import StratifiedKFold, cross_val_score
+from sklearn.tree import DecisionTreeClassifier
 
 from .. import config, profile as prof
-from ..issue import LOW, MEDIUM, make_issue, pct
+from ..issue import HIGH, LOW, MEDIUM, make_issue, pct
 
 
 def _missingness(df: pd.DataFrame, profiles: list[dict]) -> list[dict]:
@@ -433,8 +435,15 @@ def _redundant_pairs(df: pd.DataFrame, profiles: list[dict], label_column: str |
     return issues
 
 
-def run(df: pd.DataFrame, profiles: list[dict], label_column: str | None = None) -> list[dict]:
+def run(
+    df: pd.DataFrame,
+    profiles: list[dict],
+    label_column: str | None = None,
+    split_column: str | None = None,
+) -> tuple[list[dict], list[dict]]:
+    leakage, skipped = _single_feature_leakage(df, profiles, label_column, split_column)
     return [
+        *leakage,
         *_missingness(df, profiles),
         *_sparse_rows(df),
         *_constant(df, profiles),
@@ -445,4 +454,76 @@ def run(df: pd.DataFrame, profiles: list[dict], label_column: str | None = None)
         *_outliers(df, profiles),
         *_implausible(df, profiles),
         *_redundant_pairs(df, profiles, label_column),
-    ]
+    ], skipped
+
+
+def _encode_single(df: pd.DataFrame, col: str, kind: str) -> np.ndarray | None:
+    if kind == prof.CONSTANT:
+        return None
+    if kind in (prof.NUMERIC, prof.DATETIME):
+        values = (
+            prof.as_numeric(df[col])
+            if kind == prof.NUMERIC
+            else prof.as_datetime(df[col]).astype("int64", errors="ignore")
+        ).reindex(df.index).astype(float)
+        return values.fillna(values.median()).to_numpy().reshape(-1, 1)
+    if kind == prof.TEXT:
+        from ..encode import _encode_text
+
+        return _encode_text(df, [col])
+    codes = df[col].fillna("").astype(str).astype("category").cat.codes
+    return codes.to_numpy().reshape(-1, 1)
+
+
+def _single_feature_leakage(
+    df: pd.DataFrame, profiles: list[dict], label_column: str | None, split_column: str | None
+) -> tuple[list[dict], list[dict]]:
+    if not label_column or label_column not in df.columns:
+        return [], [{"check": "C10_leakage", "reason": "no label column was chosen"}]
+
+    labels = df[label_column].where(~prof.missing_mask(df[label_column]))
+    counts = labels.value_counts()
+    if len(counts) < 2:
+        return [], [{"check": "C10_leakage", "reason": "the label has fewer than two classes"}]
+
+    keep = labels.notna() & ~labels.isin(counts[counts < config.MIN_CLASS_MEMBERS_FOR_CV].index)
+    if keep.sum() < config.MISLABEL_MIN_ROWS or labels[keep].nunique() < 2:
+        return [], [{"check": "C10_leakage", "reason": "too few rows to cross-validate"}]
+
+    y = labels[keep].astype(str).to_numpy()
+    # Always guessing the biggest class. On a label that is 99% one value every
+    # column scores 0.99, and without this the check reports the whole dataset.
+    majority = float(pd.Series(y).value_counts(normalize=True).iloc[0])
+    folds = StratifiedKFold(config.CV_FOLDS, shuffle=True, random_state=0)
+
+    issues = []
+    for p in profiles:
+        col = p["name"]
+        if col in {label_column, split_column} or p["inferred_type"] == prof.CONSTANT:
+            continue
+        x = _encode_single(df[keep], col, p["inferred_type"])
+        if x is None or x.shape[1] == 0:
+            continue
+        score = float(
+            cross_val_score(
+                DecisionTreeClassifier(max_depth=3, random_state=0), x, y, cv=folds
+            ).mean()
+        )
+        if score <= config.LEAKAGE_ACCURACY or score <= majority + config.LEAKAGE_MIN_LIFT:
+            continue
+        issues.append(
+            make_issue(
+                id=f"leakage:{col}", check="C10_leakage", scope="column", severity=HIGH,
+                title=f"'{col}' predicts '{label_column}' on its own at {score:.2f}",
+                detail=(
+                    f"A depth-3 tree on '{col}' alone recovers the label {pct(score)} of the "
+                    f"time, against {pct(majority)} for always guessing the biggest class. "
+                    "A single column this accurate is not a strong feature, it is the answer "
+                    "copied into the input, usually written after the outcome was known. "
+                    "Anything trained with it will score well here and fail on new data."
+                ),
+                column=col, total_affected=len(df), suggested_action="drop_column",
+                evidence={"accuracy": score, "majority_baseline": majority},
+            )
+        )
+    return issues, []

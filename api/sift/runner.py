@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import pandas as pd
 
-from . import config, profile as prof
-from .checks import columns, dataset
+from . import config, encode, profile as prof
+from .checks import columns, dataset, rows
 from .issue import sort_issues
 
 
@@ -43,12 +43,20 @@ def audit(
     checks: list[str] | None = None,
 ) -> dict:
     profiles = prof.profile_frame(df)
-    issues = [
-        *dataset.run(df, profiles, label_column),
-        *columns.run(df, profiles, label_column),
-    ]
+    # Built once and handed to D2, D4, C10 and R1. Encoding the frame separately
+    # per check would let them disagree about whether two rows are the same.
+    encoded = encode.build(df, profiles, label_column, split_column)
+
+    dataset_issues, dataset_skipped = dataset.run(df, profiles, label_column, split_column)
+    column_issues, column_skipped = columns.run(df, profiles, label_column, split_column)
+    mislabels = rows.run(df, encoded, label_column)
+
+    issues = [*dataset_issues, *column_issues, *mislabels["issues"]]
+    skipped = [*dataset_skipped, *column_skipped, *mislabels["skipped"]]
+
     if checks:
-        issues = [i for i in issues if i["check"] in set(checks)]
+        wanted = set(checks)
+        issues = [i for i in issues if i["check"] in wanted]
     issues = sort_issues(issues)
 
     affected: set[int] = set()
@@ -62,7 +70,9 @@ def audit(
             "medium": sum(i["severity"] == "medium" for i in issues),
             "low": sum(i["severity"] == "low" for i in issues),
             "rows_affected": len(affected),
-            "cv_accuracy": None,
-            "skipped_checks": [],
+            # Surfaced next to the flags on purpose. A list of suspicious rows
+            # means nothing until you know the model could learn the task.
+            "cv_accuracy": mislabels["cv_accuracy"],
+            "skipped_checks": skipped,
         },
     }
