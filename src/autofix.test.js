@@ -14,9 +14,31 @@ const audit = JSON.parse(
   readFileSync(new URL('./fixtures/audit_churn.json', import.meta.url), 'utf8'),
 )
 
-test('picks up the four unambiguous fixes on the sample', () => {
-  const checks = safeFixes(audit.issues).map((e) => e.op)
-  assert.deepEqual(checks.sort(), ['dedupe', 'drop_column', 'drop_rows', 'normalize_values'])
+test('picks up every unambiguous fix on the sample', () => {
+  const ops = new Set(safeFixes(audit.issues).map((e) => e.op))
+  for (const expected of [
+    'trim',
+    'blank_values',
+    'normalize_values',
+    'fill_missing',
+    'drop_column',
+    'dedupe',
+    'drop_rows',
+  ]) {
+    assert.ok(ops.has(expected), `${expected} was not offered`)
+  }
+})
+
+test('fixes come back in an order that lets them build on each other', () => {
+  // Sentinels have to be blanked before a gap can be filled, and rows can only
+  // be deduplicated once every value has settled.
+  const ops = safeFixes(audit.issues).map((e) => e.op)
+  const at = (op) => ops.indexOf(op)
+
+  assert.ok(at('trim') < at('blank_values'), 'trim must run first')
+  assert.ok(at('blank_values') < at('fill_missing'), 'blank before filling gaps')
+  assert.ok(at('fill_missing') < at('dedupe'), 'dedupe last, once values have settled')
+  assert.ok(at('dedupe') < at('drop_rows'), 'drop rows after deduplicating')
 })
 
 test('never touches anything that needs a judgement call', () => {
@@ -29,6 +51,9 @@ test('never touches anything that needs a judgement call', () => {
   assert.ok(!columns.includes('customer_id'))
   assert.ok(!columns.includes('email'))
   assert.ok(!edits.some((e) => e.op === 'relabel'))
+  // Numbers are never filled with a label, only categories.
+  const filled = edits.filter((e) => e.op === 'fill_missing').map((e) => e.column)
+  assert.ok(!filled.includes('tenure_months') && !filled.includes('monthly_charges'))
 
   const contaminated = audit.issues.find((i) => i.check === 'D4_train_test_overlap').row_indices
   const droppedRows = edits.flatMap((e) => e.rowIndices ?? [])

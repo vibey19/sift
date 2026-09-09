@@ -76,6 +76,24 @@ def normalise_text(value: str) -> str:
     return " ".join(stripped.split()).lower()
 
 
+def is_sentinel(s: pd.Series) -> pd.Series:
+    return s.fillna("").map(lambda v: normalise_text(v) in config.SENTINEL_TOKENS)
+
+
+def without_sentinels(df: pd.DataFrame) -> pd.DataFrame:
+    """A copy where words meaning "missing" are actually missing.
+
+    Relationships between columns are invisible until this is done. "Every item
+    has one price" is false while ERROR is one of the items, so a check looking
+    for that rule sees nothing and the user is told to fix the sentinels first
+    and come back. One pass should find everything.
+    """
+    out = df.copy()
+    for col in out.columns:
+        out.loc[is_sentinel(out[col]), col] = ""
+    return out
+
+
 def missing_mask(s: pd.Series) -> pd.Series:
     return s.isna() | s.fillna("").map(lambda v: normalise_text(v) in config.MISSING_TOKENS)
 

@@ -12,9 +12,48 @@
 // removing identifier columns. Those change what the data means, and the user
 // should be the one deciding.
 
-import { DEDUPE, DROP_COLUMN, DROP_ROWS, NORMALIZE } from './edits.js'
+import {
+  BLANK_VALUES,
+  DEDUPE,
+  DROP_COLUMN,
+  DROP_ROWS,
+  FILL_FROM_COLUMN,
+  FILL_FROM_FORMULA,
+  FILL_MISSING,
+  NORMALIZE,
+  TRIM,
+} from './edits.js'
+
+// Order is not cosmetic. Sentinels have to be blanked before a gap can be
+// filled, a gap has to be filled before the row stops looking half empty, and
+// deduplication has to run after every value has settled or it compares rows
+// that are about to change.
+const ORDER = [
+  TRIM,
+  BLANK_VALUES,
+  NORMALIZE,
+  FILL_FROM_COLUMN,
+  FILL_FROM_FORMULA,
+  FILL_MISSING,
+  DROP_COLUMN,
+  DEDUPE,
+  DROP_ROWS,
+]
 
 const SAFE = {
+  C14_untrimmed: () => [{ op: TRIM, label: 'trim the space around every value' }],
+
+  C11_sentinel_values: (issue) => [
+    {
+      op: BLANK_VALUES,
+      column: issue.column,
+      forms: issue.evidence?.forms ?? [],
+      label:
+        `blank ${issue.evidence?.count ?? 0} cells in '${issue.column}' that say ` +
+        `${(issue.evidence?.forms ?? []).slice(0, 2).map((f) => `"${f}"`).join(' or ')}`,
+    },
+  ],
+
   C5_categorical_inconsistency: (issue) =>
     Object.entries(issue.evidence?.canonical ?? {}).map(([to, from]) => ({
       op: NORMALIZE,
@@ -23,6 +62,38 @@ const SAFE = {
       to,
       label: `normalise ${from.length} spellings in '${issue.column}'`,
     })),
+
+  C12_functional_dependency: (issue) => [
+    {
+      op: FILL_FROM_COLUMN,
+      column: issue.column,
+      source: issue.evidence?.source,
+      mapping: issue.evidence?.mapping ?? {},
+      label:
+        `recover ${issue.total_affected} missing '${issue.column}' values by looking them ` +
+        `up from '${issue.evidence?.source}'`,
+    },
+  ],
+
+  C13_arithmetic_relation: (issue) => [
+    {
+      op: FILL_FROM_FORMULA,
+      column: issue.column,
+      left: issue.evidence?.left,
+      right: issue.evidence?.right,
+      operation: issue.evidence?.operation,
+      label: `compute ${issue.total_affected} missing '${issue.column}' values from ${issue.evidence?.formula}`,
+    },
+  ],
+
+  C1_missingness: (issue) => [
+    {
+      op: FILL_MISSING,
+      column: issue.column,
+      value: issue.evidence?.fill_with ?? 'Unknown',
+      label: `label ${issue.total_affected} unrecorded '${issue.column}' values as Unknown`,
+    },
+  ],
 
   D1_exact_duplicates: (issue) => [
     {
@@ -48,20 +119,38 @@ const SAFE = {
   ],
 }
 
+// Columns the tool is about to ask the user to delete. Editing one silently is
+// work the user is likely to throw away, and it muddies the edit log with
+// changes to a column that should not have been there in the first place.
+function contestedColumns(issues) {
+  return new Set(
+    issues
+      .filter((i) => i.check === 'C10_leakage' || i.check === 'C3_id_like')
+      .map((i) => i.column)
+      .filter(Boolean),
+  )
+}
+
 export function safeFixes(issues = []) {
+  const contested = contestedColumns(issues)
   const edits = []
   for (const issue of issues) {
+    if (issue.column && contested.has(issue.column)) continue
     const build = SAFE[issue.check]
     if (!build) continue
+    // C1 fires on every column with gaps, but only a category can be labelled
+    // Unknown. Filling a number that way would invent data.
+    if (issue.check === 'C1_missingness' && issue.suggested_action !== 'fill_missing') continue
     for (const edit of build(issue)) {
-      // A check can fire with nothing actionable behind it, which should not
-      // become an edit that does nothing and still occupies the undo stack.
       if (edit.op === NORMALIZE && !edit.from?.length) continue
+      if (edit.op === BLANK_VALUES && !edit.forms?.length) continue
       if (edit.op === DROP_ROWS && !edit.rowIndices?.length) continue
+      if (edit.op === FILL_FROM_COLUMN && !edit.source) continue
+      if (edit.op === FILL_FROM_FORMULA && !(edit.left && edit.right && edit.operation)) continue
       edits.push(edit)
     }
   }
-  return edits
+  return edits.sort((a, b) => ORDER.indexOf(a.op) - ORDER.indexOf(b.op))
 }
 
 export function describeFixes(edits) {

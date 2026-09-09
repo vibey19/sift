@@ -1,7 +1,19 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 
-import { DEDUPE, DROP_COLUMN, DROP_ROWS, NORMALIZE, RELABEL, replay } from './edits.js'
+import {
+  BLANK_VALUES,
+  DEDUPE,
+  DROP_COLUMN,
+  DROP_ROWS,
+  FILL_FROM_COLUMN,
+  FILL_FROM_FORMULA,
+  FILL_MISSING,
+  NORMALIZE,
+  RELABEL,
+  TRIM,
+  replay,
+} from './edits.js'
 
 const columns = ['id', 'plan', 'label']
 const rows = [
@@ -103,4 +115,58 @@ test('an unknown op is ignored rather than throwing', () => {
 
 test('an edit naming a missing column is ignored', () => {
   assert.equal(replay(columns, rows, [{ op: RELABEL, column: 'nope', rowIndices: [0], newValue: 'x' }]).rows.length, 4)
+})
+
+test('blanking replaces every spelling of a sentinel with nothing', () => {
+  const out = replay(['a'], [['ERROR'], ['ok'], ['unknown']], [
+    { op: BLANK_VALUES, column: 'a', forms: ['ERROR', 'UNKNOWN'] },
+  ])
+  assert.deepEqual(out.rows.map((r) => r[0]), ['', 'ok', ''])
+})
+
+test('filling a gap does not overwrite a value that is already there', () => {
+  const out = replay(['a'], [['x'], [''], ['  ']], [
+    { op: FILL_MISSING, column: 'a', value: 'Unknown' },
+  ])
+  assert.deepEqual(out.rows.map((r) => r[0]), ['x', 'Unknown', 'Unknown'])
+})
+
+test('filling from another column is a lookup, not a guess', () => {
+  const out = replay(['item', 'price'], [['Tea', ''], ['Cake', ''], ['Beer', '']], [
+    { op: FILL_FROM_COLUMN, column: 'price', source: 'item', mapping: { Tea: '1.5', Cake: '3' } },
+  ])
+  // Beer is not in the mapping, so it stays empty rather than being invented.
+  assert.deepEqual(out.rows.map((r) => r[1]), ['1.5', '3', ''])
+})
+
+test('a formula fills whichever term is missing', () => {
+  const rows = [['2', '3', ''], ['', '3', '12'], ['2', '', '10']]
+  const product = replay(['q', 'p', 't'], rows, [
+    { op: FILL_FROM_FORMULA, column: 't', left: 'q', right: 'p', operation: 'product' },
+  ])
+  assert.equal(product.rows[0][2], '6')
+
+  const quotient = replay(['q', 'p', 't'], rows, [
+    { op: FILL_FROM_FORMULA, column: 'q', left: 't', right: 'p', operation: 'quotient' },
+  ])
+  assert.equal(quotient.rows[1][0], '4')
+})
+
+test('a formula never divides by zero', () => {
+  const out = replay(['a', 'b', 'c'], [['', '0', '5']], [
+    { op: FILL_FROM_FORMULA, column: 'a', left: 'c', right: 'b', operation: 'quotient' },
+  ])
+  assert.equal(out.rows[0][0], '', 'dividing by zero should leave the cell alone')
+})
+
+test('floating point noise does not leak into the file', () => {
+  const out = replay(['q', 'p', 't'], [['3', '1.4', '']], [
+    { op: FILL_FROM_FORMULA, column: 't', left: 'q', right: 'p', operation: 'product' },
+  ])
+  assert.equal(out.rows[0][2], '4.2', 'expected 4.2, not 4.199999999999999')
+})
+
+test('trim strips padding from every column', () => {
+  const out = replay(['a', 'b'], [[' 1 ', 'x  '], ['2', ' y']], [{ op: TRIM }])
+  assert.deepEqual(out.rows, [['1', 'x'], ['2', 'y']])
 })

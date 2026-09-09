@@ -2,11 +2,11 @@
   "dataset": "churn_dirty.csv",
   "n_rows": 3075,
   "n_cols": 14,
-  "cv_accuracy": 0.985040650406504,
+  "cv_accuracy": 0.9863414634146341,
   "high": 2,
-  "medium": 12,
-  "low": 3,
-  "rows_affected": 2306,
+  "medium": 13,
+  "low": 5,
+  "rows_affected": 2383,
   "issues": [
     {
       "id": "leakage:cancellation_reason",
@@ -27,14 +27,14 @@
       "column": "split",
       "total_affected": 50,
       "row_indices": [
-        41,
-        212,
-        247,
-        274,
-        517,
-        744,
-        808,
-        887
+        199,
+        321,
+        356,
+        382,
+        437,
+        586,
+        630,
+        682
       ]
     },
     {
@@ -46,14 +46,14 @@
       "column": "churned",
       "total_affected": 39,
       "row_indices": [
-        743,
-        1435,
-        1805,
-        25,
-        1152,
-        385,
         1886,
-        2261
+        1389,
+        1805,
+        372,
+        2805,
+        2061,
+        1760,
+        2506
       ]
     },
     {
@@ -80,9 +80,9 @@
       "check": "C5_categorical_inconsistency",
       "severity": "medium",
       "title": "'plan' has 1 value spelled more than one way",
-      "detail": "' Premium ', 'PREMIUM', 'Premium', 'premium' are the same value written differently, and every model will treat them as separate categories. 93 rows use a non-canonical spelling.",
+      "detail": "' Premium ', 'PREMIUM', 'Premium', 'premium' are the same value written differently, and every model will treat them as separate categories. 91 rows use a non-canonical spelling.",
       "column": "plan",
-      "total_affected": 93,
+      "total_affected": 91,
       "row_indices": [
         14,
         37,

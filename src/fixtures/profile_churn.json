@@ -67,21 +67,21 @@
       ],
       "top_values": {
         " Premium ": 30,
-        "Basic": 1293,
+        "Basic": 1294,
         "Enterprise": 3,
-        "PREMIUM": 32,
-        "Premium": 460,
-        "Standard": 1218,
-        "premium": 31
+        "PREMIUM": 31,
+        "Premium": 459,
+        "Standard": 1220,
+        "premium": 30
       },
       "unique_share": 0.0022823606129768505
     },
     {
       "inferred_type": "categorical",
-      "missing_fraction": 0.0026016260162601626,
+      "missing_fraction": 0.08292682926829269,
       "missing_tokens": {},
-      "n_missing": 8,
-      "n_present": 3067,
+      "n_missing": 255,
+      "n_present": 2820,
       "n_unique": 3,
       "name": "contract",
       "sample_values": [
@@ -90,11 +90,11 @@
         "Two year"
       ],
       "top_values": {
-        "Annual": 944,
-        "Monthly": 1663,
-        "Two year": 460
+        "Annual": 861,
+        "Monthly": 1530,
+        "Two year": 429
       },
-      "unique_share": 0.00097815454841865
+      "unique_share": 0.0010638297872340426
     },
     {
       "inferred_type": "numeric",
@@ -113,7 +113,7 @@
       ],
       "stats": {
         "max": 6900.0,
-        "mean": 45.31479674796748,
+        "mean": 45.28227642276423,
         "median": 37.0,
         "min": 1.0
       },
@@ -136,8 +136,8 @@
       ],
       "stats": {
         "max": 150.0,
-        "mean": 70.30613628953374,
-        "median": 69.7,
+        "mean": 70.18468536028692,
+        "median": 69.51,
         "min": 20.0
       },
       "unique_share": 0.805021193348549
@@ -159,8 +159,8 @@
       ],
       "stats": {
         "max": 138.0,
-        "mean": 64.68163351809586,
-        "median": 64.12,
+        "mean": 64.56989892403,
+        "median": 63.95,
         "min": 18.4
       },
       "unique_share": 0.7893707205738507
@@ -182,7 +182,7 @@
       ],
       "stats": {
         "max": 8.0,
-        "mean": 1.1907401369416368,
+        "mean": 1.1943267036191718,
         "median": 1.0,
         "min": 0.0
       },
@@ -190,15 +190,15 @@
     },
     {
       "inferred_type": "numeric",
-      "missing_fraction": 0.03609756097560975,
+      "missing_fraction": 0.03186991869918699,
       "missing_tokens": {
-        "n/a": 38,
+        "n/a": 34,
         "none": 37,
-        "unknown": 28
+        "unknown": 19
       },
-      "n_missing": 111,
-      "n_present": 2964,
-      "n_unique": 30,
+      "n_missing": 98,
+      "n_present": 2977,
+      "n_unique": 33,
       "name": "discount_pct",
       "sample_values": [
         "3",
@@ -209,18 +209,18 @@
       ],
       "stats": {
         "max": 29.0,
-        "mean": 14.553306342780028,
+        "mean": 14.60270176653966,
         "median": 15.0,
         "min": 0.0
       },
-      "unique_share": 0.010121457489878543
+      "unique_share": 0.011084984884111521
     },
     {
       "inferred_type": "id_like",
-      "missing_fraction": 0.35252032520325205,
+      "missing_fraction": 0.35121951219512193,
       "missing_tokens": {},
-      "n_missing": 1084,
-      "n_present": 1991,
+      "n_missing": 1080,
+      "n_present": 1995,
       "n_unique": 1946,
       "name": "email",
       "sample_values": [
@@ -230,7 +230,7 @@
         "user8@example.com",
         "user9@example.com"
       ],
-      "unique_share": 0.9773982923154194
+      "unique_share": 0.9754385964912281
     },
     {
       "inferred_type": "categorical",
@@ -263,17 +263,17 @@
         "0"
       ],
       "top_values": {
-        "0": 1730,
-        "1": 1345
+        "0": 1725,
+        "1": 1350
       },
       "unique_share": 0.0006504065040650406
     },
     {
       "inferred_type": "categorical",
-      "missing_fraction": 0.5632520325203252,
+      "missing_fraction": 0.5616260162601626,
       "missing_tokens": {},
-      "n_missing": 1732,
-      "n_present": 1343,
+      "n_missing": 1727,
+      "n_present": 1348,
       "n_unique": 4,
       "name": "cancellation_reason",
       "sample_values": [
@@ -283,12 +283,12 @@
         "service"
       ],
       "top_values": {
-        "competitor": 304,
-        "moved": 343,
-        "price": 363,
-        "service": 333
+        "competitor": 307,
+        "moved": 341,
+        "price": 366,
+        "service": 334
       },
-      "unique_share": 0.0029784065524944155
+      "unique_share": 0.002967359050445104
     }
   ],
   "n_cols": 14,
@@ -329,7 +329,7 @@
     {
       "cancellation_reason": "",
       "churned": "0",
-      "contract": "Annual",
+      "contract": "",
       "customer_id": "C000002",
       "discount_pct": "16",
       "email": "user2@example.com",
@@ -553,7 +553,7 @@
     {
       "cancellation_reason": "",
       "churned": "0",
-      "contract": "Monthly",
+      "contract": "",
       "customer_id": "C000016",
       "discount_pct": "14",
       "email": "",

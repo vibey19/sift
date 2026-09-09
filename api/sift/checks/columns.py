@@ -43,11 +43,112 @@ def _missingness(df: pd.DataFrame, profiles: list[dict]) -> list[dict]:
                 detail=detail,
                 column=col,
                 row_indices=rows,
-                suggested_action="review",
-                evidence={"missing_fraction": frac, "spellings": p["missing_tokens"]},
+                # A gap in a category is filled with a label rather than left
+                # blank, because "" means something different to every tool that
+                # reads the file next.
+                suggested_action=(
+                    "fill_missing"
+                    if p["inferred_type"] in (prof.CATEGORICAL, prof.BOOLEAN)
+                    else "review"
+                ),
+                evidence={
+                    "missing_fraction": frac,
+                    "spellings": p["missing_tokens"],
+                    "fill_with": "Unknown",
+                },
             )
         )
     return issues
+
+
+def _sentinel_values(df: pd.DataFrame, profiles: list[dict]) -> list[dict]:
+    """Values that mean "missing" but were written as words.
+
+    A column of numbers with ERROR in it does not load as numbers, and a
+    spreadsheet that writes UNKNOWN is not distinguishing that from an empty
+    cell. The distinction matters only if the marker is a real category, which
+    is why a column made mostly of one marker is left alone: at that point it is
+    a value, not an absence.
+    """
+    issues = []
+    for p in profiles:
+        col = p["name"]
+        values = df[col].fillna("")
+        hits = values.map(lambda v: prof.normalise_text(v) in config.SENTINEL_TOKENS)
+        total = int(hits.sum())
+        if total < config.SENTINEL_MIN_COUNT:
+            continue
+        if len(df) and total / len(df) > config.SENTINEL_MAX_SHARE:
+            continue
+
+        counts = values[hits].value_counts()
+        forms = [str(f) for f in counts.index[:10]]
+        kind = p["inferred_type"]
+        consequence = (
+            f"Left in place the column will not load as {kind}"
+            if kind in (prof.NUMERIC, prof.DATETIME)
+            else "Left in place they read as a category rather than as an absence"
+        )
+        issues.append(
+            make_issue(
+                id=f"sentinel:{col}",
+                check="C11_sentinel_values",
+                scope="column",
+                severity=MEDIUM,
+                title=f"'{col}' writes missing values as {', '.join(repr(f) for f in forms[:3])}",
+                detail=(
+                    f"{total} cells in '{col}' hold a word meaning no value rather than a value. "
+                    f"{consequence}, and every tool downstream treats them differently. "
+                    "Blanking them makes the gap explicit."
+                ),
+                column=col,
+                row_indices=df.index[hits],
+                suggested_action="blank_values",
+                evidence={"forms": forms, "count": total},
+            )
+        )
+    return issues
+
+
+def _untrimmed(df: pd.DataFrame, profiles: list[dict]) -> list[dict]:
+    """Cells with space around them.
+
+    Invisible on screen and fatal to a join, a groupby or a numeric cast. C5
+    catches this for categories it can group; this catches it everywhere else,
+    including in columns that would otherwise parse as numbers.
+    """
+    affected: dict[str, int] = {}
+    rows: set = set()
+    for p in profiles:
+        col = p["name"]
+        values = df[col].fillna("")
+        ragged = values.ne(values.str.strip())
+        count = int(ragged.sum())
+        if count:
+            affected[col] = count
+            rows.update(df.index[ragged])
+    if not affected:
+        return []
+
+    worst = sorted(affected.items(), key=lambda kv: -kv[1])
+    named = ", ".join(f"'{c}'" for c, _ in worst[:3])
+    return [
+        make_issue(
+            id="untrimmed",
+            check="C14_untrimmed",
+            scope="dataset",
+            severity=LOW,
+            title=f"{sum(affected.values())} cells have space around them",
+            detail=(
+                f"Padding appears in {len(affected)} columns, most of it in {named}. "
+                "Whitespace is invisible on screen and still breaks a join, a grouping "
+                "or a numeric cast."
+            ),
+            row_indices=sorted(rows),
+            suggested_action="trim",
+            evidence={"columns": dict(worst[:10])},
+        )
+    ]
 
 
 def _sparse_rows(df: pd.DataFrame) -> list[dict]:
@@ -148,6 +249,11 @@ def _mixed_types(df: pd.DataFrame, profiles: list[dict]) -> list[dict]:
         if min(num_share, str_share) < config.MIXED_TYPE_MIN_SHARE:
             continue
         offenders = values[numeric.isna()]
+        # Words meaning "missing" are C11's finding. Reporting them here as well
+        # gives the user the same cells twice under two different names.
+        offenders = offenders[~prof.is_sentinel(offenders)]
+        if len(offenders) / len(values) < config.MIXED_TYPE_MIN_SHARE:
+            continue
         top = offenders.value_counts().head(5)
         sentinel = all(prof.normalise_text(v) in config.MISSING_TOKENS for v in top.index)
         detail = (
@@ -445,6 +551,8 @@ def run(
     return [
         *leakage,
         *_missingness(df, profiles),
+        *_sentinel_values(df, profiles),
+        *_untrimmed(df, profiles),
         *_sparse_rows(df),
         *_constant(df, profiles),
         *_id_like(profiles, label_column),

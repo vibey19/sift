@@ -1005,6 +1005,49 @@
       "total_affected": 4
     },
     {
+      "check": "C14_untrimmed",
+      "column": null,
+      "detail": "Padding appears in 1 columns, most of it in 'sentiment'. Whitespace is invisible on screen and still breaks a join, a grouping or a numeric cast.",
+      "evidence": {
+        "columns": {
+          "sentiment": 25
+        }
+      },
+      "id": "untrimmed",
+      "row_indices": [
+        10,
+        31,
+        53,
+        84,
+        105,
+        115,
+        232,
+        261,
+        263,
+        313,
+        341,
+        413,
+        441,
+        474,
+        650,
+        706,
+        802,
+        831,
+        955,
+        988,
+        1117,
+        1248,
+        1315,
+        1382,
+        1419
+      ],
+      "scope": "dataset",
+      "severity": "low",
+      "suggested_action": "trim",
+      "title": "25 cells have space around them",
+      "total_affected": 25
+    },
+    {
       "check": "C6_rare_categories",
       "column": "sentiment",
       "detail": "' neutral' appear 4 times or so. Categories this thin cannot be learned and will not survive a split.",
@@ -1030,7 +1073,7 @@
   "summary": {
     "cv_accuracy": 0.9296515450361604,
     "high": 1,
-    "low": 1,
+    "low": 2,
     "medium": 4,
     "rows_affected": 147,
     "skipped_checks": []

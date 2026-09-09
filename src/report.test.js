@@ -45,8 +45,11 @@ test('every issue appears under its severity heading', () => {
 })
 
 test('carries the accuracy of the model that produced the flags', () => {
-  assert.match(report(), /cross-validation, so it is worth listening to/)
-  assert.match(report(), /0\.985/)
+  const md = report()
+  assert.match(md, /cross-validation, so it is worth listening to/)
+  // Compared against the fixture's own number rather than a literal, so
+  // regenerating the samples does not break the test for the wrong reason.
+  assert.ok(md.includes(result.summary.cv_accuracy.toFixed(3)))
 })
 
 test('warns rather than reassures when the model is weak', () => {

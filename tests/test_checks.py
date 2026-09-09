@@ -29,13 +29,22 @@ def test_c3_flags_the_id_column_but_not_the_label(churn_issues, churn_truth, by_
     assert churn_truth["label_column"] not in flagged
 
 
-def test_c4_flags_the_mixed_type_column(churn_issues, churn_truth, by_check):
-    found = by_check(churn_issues, "C4_mixed_types", column=churn_truth["mixed_type_cols"][0])
-    assert found
-    # The sentinels are the reason it will not parse, so they must be named.
-    assert "N/A" in str(found[0]["evidence"]["examples"]) or "none" in str(
-        found[0]["evidence"]["examples"]
-    )
+def test_c4_flags_numbers_written_as_words(churn_issues, churn_truth, by_check):
+    column = churn_truth["mixed_type_cols"][0]
+    found = by_check(churn_issues, "C4_mixed_types", column=column)
+    assert found, "a column of numbers containing 'ten' should be reported as mixed"
+
+    examples = str(found[0]["evidence"]["examples"])
+    assert any(word in examples for word in ("ten", "twenty", "fifteen"))
+    # Words meaning "missing" belong to C11 and must not be repeated here.
+    assert "N/A" not in examples and "none" not in examples
+
+
+def test_c11_owns_the_sentinels_in_that_same_column(churn_issues, churn_truth, by_check):
+    column = churn_truth["mixed_type_cols"][0]
+    found = by_check(churn_issues, "C11_sentinel_values", column=column)
+    assert found, "the missing-value markers should be reported by C11"
+    assert found[0]["suggested_action"] == "blank_values"
 
 
 def test_c5_groups_the_case_and_whitespace_variants(churn_issues, churn_truth, by_check):

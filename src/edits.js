@@ -12,6 +12,11 @@ export const DEDUPE = 'dedupe'
 export const RELABEL = 'relabel'
 export const NORMALIZE = 'normalize_values'
 export const DROP_COLUMN = 'drop_column'
+export const BLANK_VALUES = 'blank_values'
+export const FILL_MISSING = 'fill_missing'
+export const FILL_FROM_COLUMN = 'fill_from_column'
+export const FILL_FROM_FORMULA = 'fill_from_formula'
+export const TRIM = 'trim'
 
 function normalise(value) {
   return String(value ?? '').trim().toLowerCase().replace(/\s+/g, ' ')
@@ -62,6 +67,84 @@ export function replay(columns, rows, edits) {
         break
       }
 
+      case BLANK_VALUES: {
+        const col = index[edit.column]
+        if (col == null) break
+        const forms = new Set((edit.forms ?? []).map(normalise))
+        for (let row = 0; row < rows.length; row += 1) {
+          if (droppedRows.has(row)) continue
+          if (forms.has(normalise(cellAt(row, col)))) overrides.set(`${row}:${col}`, '')
+        }
+        break
+      }
+
+      case FILL_MISSING: {
+        const col = index[edit.column]
+        if (col == null) break
+        for (let row = 0; row < rows.length; row += 1) {
+          if (droppedRows.has(row)) continue
+          if (String(cellAt(row, col) ?? '').trim() === '') {
+            overrides.set(`${row}:${col}`, edit.value)
+          }
+        }
+        break
+      }
+
+      case FILL_FROM_COLUMN: {
+        // Deduction, not imputation: the value is looked up from a column the
+        // server proved determines this one.
+        const col = index[edit.column]
+        const from = index[edit.source]
+        if (col == null || from == null) break
+        for (let row = 0; row < rows.length; row += 1) {
+          if (droppedRows.has(row)) continue
+          if (String(cellAt(row, col) ?? '').trim() !== '') continue
+          const key = String(cellAt(row, from) ?? '')
+          const value = edit.mapping?.[key]
+          if (value !== undefined) overrides.set(`${row}:${col}`, value)
+        }
+        break
+      }
+
+      case FILL_FROM_FORMULA: {
+        const col = index[edit.column]
+        const a = index[edit.left]
+        const b = index[edit.right]
+        if (col == null || a == null || b == null) break
+        for (let row = 0; row < rows.length; row += 1) {
+          if (droppedRows.has(row)) continue
+          if (String(cellAt(row, col) ?? '').trim() !== '') continue
+          const x = Number(cellAt(row, a))
+          const y = Number(cellAt(row, b))
+          if (!Number.isFinite(x) || !Number.isFinite(y)) continue
+          if (edit.operation === 'quotient' && y === 0) continue
+          const value =
+            edit.operation === 'product'
+              ? x * y
+              : edit.operation === 'sum'
+                ? x + y
+                : edit.operation === 'quotient'
+                  ? x / y
+                  : x - y
+          // Floating point makes 4.199999999999999 out of 1.4 * 3. Rounded to a
+          // precision no money or count needs to exceed.
+          overrides.set(`${row}:${col}`, String(Math.round(value * 1e6) / 1e6))
+        }
+        break
+      }
+
+      case TRIM: {
+        for (let row = 0; row < rows.length; row += 1) {
+          if (droppedRows.has(row)) continue
+          for (let col = 0; col < columns.length; col += 1) {
+            const value = String(cellAt(row, col) ?? '')
+            const trimmed = value.trim()
+            if (trimmed !== value) overrides.set(`${row}:${col}`, trimmed)
+          }
+        }
+        break
+      }
+
       case DEDUPE: {
         // Deduplicating after a relabel has to see the relabelled values, so the
         // key is built from the current state rather than the original row.
@@ -107,6 +190,16 @@ export function describe(edit) {
       return `normalised ${edit.from.length} spellings in '${edit.column}'`
     case DROP_COLUMN:
       return `dropped column '${edit.column}'`
+    case BLANK_VALUES:
+      return `blanked ${edit.forms.map((f) => `'${f}'`).join(' and ')} in '${edit.column}'`
+    case FILL_MISSING:
+      return `filled the gaps in '${edit.column}' with '${edit.value}'`
+    case FILL_FROM_COLUMN:
+      return `filled '${edit.column}' from '${edit.source}'`
+    case FILL_FROM_FORMULA:
+      return `computed the missing '${edit.column}' from '${edit.left}' and '${edit.right}'`
+    case TRIM:
+      return 'trimmed surrounding whitespace'
     default:
       return edit.op
   }

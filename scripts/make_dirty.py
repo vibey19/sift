@@ -103,9 +103,10 @@ def make_churn(seed: int = SEED) -> tuple[pd.DataFrame, dict]:
     exact_src = pool.take(30)
     near_src = pool.take(20)
     sparse_rows = pool.take(8)
-    # C4 only fires when neither the numeric nor the string side is under 2%,
-    # so this has to clear that floor to be a usable fixture for it.
-    mixed_type = pool.take(100)
+    # C4 only fires when neither side is under 2%, and this column carries two
+    # separate faults that are split evenly between these rows. Each half has to
+    # clear the floor on its own, so the pool is sized for the half, not the whole.
+    mixed_type = pool.take(180)
     implausible = pool.take(10)
     rare_cat = pool.take(3)
 
@@ -120,7 +121,17 @@ def make_churn(seed: int = SEED) -> tuple[pd.DataFrame, dict]:
     df.loc[rare_cat, "plan"] = "Enterprise"
 
     df.loc[rng.choice(n, int(n * 0.35), replace=False), "email"] = np.nan
-    df.loc[mixed_type, "discount_pct"] = rng.choice(["N/A", "none", "unknown"], len(mixed_type))
+    # A plain categorical with gaps, on a column nothing else objects to. The
+    # other two columns with missing values here are the leak and an id, and
+    # both are left alone by the one-click fixes on purpose.
+    df.loc[rng.choice(n, int(n * 0.08), replace=False), "contract"] = np.nan
+    # Two different faults in one column: words that mean "missing", which C11
+    # reports, and numbers written out as words, which C4 reports. A fixture
+    # with only the first cannot tell the two checks apart.
+    sentinel_rows = mixed_type[: len(mixed_type) // 2]
+    spelled_rows = mixed_type[len(mixed_type) // 2 :]
+    df.loc[sentinel_rows, "discount_pct"] = rng.choice(["N/A", "none", "unknown"], len(sentinel_rows))
+    df.loc[spelled_rows, "discount_pct"] = rng.choice(["ten", "twenty", "fifteen"], len(spelled_rows))
     df.loc[implausible, "signup_date"] = "2031-04-02"
     # Has to clear half the columns, not reach it, or C1 will not call these
     # rows sparse and the fixture would assert against a check that never fires.
@@ -159,7 +170,7 @@ def make_churn(seed: int = SEED) -> tuple[pd.DataFrame, dict]:
         "leaked_cols": ["cancellation_reason"],
         "constant_cols": ["region"],
         "id_cols": ["customer_id"],
-        "missing_cols": ["email"],
+        "missing_cols": ["email", "contract"],
         "dirty_cat_cols": ["plan"],
         "mixed_type_cols": ["discount_pct"],
         "rare_cat_cols": ["plan"],

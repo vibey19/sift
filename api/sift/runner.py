@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 
 from . import config, encode, profile as prof
-from .checks import columns, dataset, rows
+from .checks import columns, dataset, relations, rows
 from .issue import sort_issues
 
 
@@ -76,6 +76,11 @@ def audit(
         lambda: dataset.run(df, profiles, label_column, split_column),
         lambda why: ([], [{"check": "dataset checks", "reason": f"failed to run - {why}"}]),
     )
+    relation_issues, relation_skipped = _attempt(
+        "relations",
+        lambda: relations.run(df, profiles),
+        lambda why: ([], [{"check": "relation checks", "reason": f"failed to run - {why}"}]),
+    )
     column_issues, column_skipped = _attempt(
         "columns",
         lambda: columns.run(df, profiles, label_column, split_column),
@@ -91,8 +96,8 @@ def audit(
         },
     )
 
-    issues = [*dataset_issues, *column_issues, *mislabels["issues"]]
-    skipped = [*dataset_skipped, *column_skipped, *mislabels["skipped"]]
+    issues = [*dataset_issues, *column_issues, *relation_issues, *mislabels["issues"]]
+    skipped = [*dataset_skipped, *column_skipped, *relation_skipped, *mislabels["skipped"]]
 
     if checks:
         wanted = set(checks)

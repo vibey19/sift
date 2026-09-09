@@ -147,3 +147,47 @@ MISLABEL_P_TOP_MIN = 0.75
 # datasets sit far above it (0.985 and 0.930), so it fires only where the model
 # has genuinely failed rather than merely struggled.
 WEAK_MODEL_ACCURACY = 0.60
+
+# --- C11 sentinel values -----------------------------------------------------
+# Deliberately wider than MISSING_TOKENS. "ERROR" is not counted as missing
+# everywhere, because a status column may legitimately contain it; it is counted
+# here, where the share guard below decides whether it is a marker or a value.
+SENTINEL_TOKENS = frozenset(
+    {"error", "err", "unknown", "n/a", "na", "n.a.", "null", "none", "nil", "nan",
+     "missing", "not available", "not applicable", "not recorded", "undefined",
+     "invalid", "tbd", "?", "-", "--", "#n/a", "#value!", "#ref!", "#div/0!",
+     "#name?", "#null!", "#num!"}
+)
+
+# A column where "ERROR" is most of the values is a column about errors. A
+# column where it is a small minority is a missing value wearing a costume.
+SENTINEL_MAX_SHARE = 0.40
+# Below this there is not enough of it to be worth a finding of its own.
+SENTINEL_MIN_COUNT = 3
+
+# --- C12 functional dependencies ---------------------------------------------
+# "Every item has exactly one price." Filling from a dependency is deduction
+# rather than imputation, so it only counts when it holds without exception on
+# the rows where both columns are present.
+DEPENDENCY_MIN_SUPPORT = 20  # complete rows needed before believing it
+DEPENDENCY_MIN_KEYS = 2  # a single key is a constant column, not a dependency
+DEPENDENCY_MAX_KEYS = 200  # above this it is closer to an identifier
+# A dependency can hold for some values of the key and not others: two products
+# may share a price while the rest of the prices identify one product each. The
+# unambiguous keys are still a lookup rather than a guess, so they are used and
+# the rest are left alone. Each one needs this many rows behind it first.
+DEPENDENCY_MIN_KEY_SUPPORT = 5
+# And most of the key's values have to be decisive. When only a third of them
+# settle on one answer, what has been found is a handful of coincidences rather
+# than a property of the data.
+DEPENDENCY_MIN_DECISIVE_SHARE = 0.5
+# Numeric columns can be keys too when they take few enough distinct values.
+DEPENDENCY_MAX_NUMERIC_KEYS = 30
+
+# --- C13 arithmetic relations ------------------------------------------------
+# "Total is quantity times price." Same principle: exact on every complete row,
+# or it is a correlation and filling from it would be a guess.
+ARITHMETIC_MIN_SUPPORT = 30
+ARITHMETIC_TOLERANCE = 1e-6
+# The search is cubic in numeric columns, so it is capped rather than clever.
+ARITHMETIC_MAX_COLUMNS = 10

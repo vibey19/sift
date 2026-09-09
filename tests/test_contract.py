@@ -19,6 +19,7 @@ ISSUE_KEYS = {
 SUMMARY_KEYS = {"high", "medium", "low", "rows_affected", "cv_accuracy", "skipped_checks"}
 ACTIONS = {
     "drop_rows", "relabel", "dedupe", "drop_column", "normalize_values", "review", "none",
+    "blank_values", "fill_missing", "fill_from_column", "fill_from_formula", "trim",
 }
 
 
