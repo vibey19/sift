@@ -176,3 +176,36 @@ def test_a_column_of_money_is_not_mistaken_for_an_identifier():
 
     money = pd.Series([f"${v:,.2f}" for v in range(1000, 1200)])
     assert prof.infer_type(money, len(money)) != prof.ID_LIKE
+
+
+EUROPEAN = ["1.234,50", "1.000,50", "2.500,00", "1,5"]
+
+
+@pytest.mark.parametrize("text", EUROPEAN)
+def test_a_european_decimal_is_refused_rather_than_misread(text):
+    # "1.234,50" means one thousand two hundred and thirty four. Stripping the
+    # comma reads it as 1.2345, an error of three orders of magnitude that then
+    # flows silently into every numeric check. Ambiguity is refused instead.
+    from sift import profile as prof
+
+    assert formats.parse_number(text) is None
+    assert pd.isna(prof.as_numeric(pd.Series([text])).iloc[0])
+
+
+@pytest.mark.parametrize(
+    "text,expected",
+    [("1,234.50", 1234.5), ("1,000", 1000.0), ("12,345,678", 12345678.0), ("1234.5", 1234.5)],
+)
+def test_grouped_thousands_still_read_correctly(text, expected):
+    from sift import profile as prof
+
+    assert formats.parse_number(text) == expected
+    assert prof.as_numeric(pd.Series([text])).iloc[0] == expected
+
+
+def test_a_timestamp_is_not_truncated_to_a_date():
+    # Rewriting "2023-04-01 14:30:00" to "2023-04-01" would throw away the time
+    # without saying so. The date check leaves timestamps alone.
+    stamps = [f"2023-04-{d:02d} 14:{d:02d}:00" for d in range(1, 29)]
+    df = pd.DataFrame({"when": stamps, "v": [str(i) for i in range(28)]})
+    assert not [i for i in audit(df) if i["check"] == "C16_mixed_date_formats"]

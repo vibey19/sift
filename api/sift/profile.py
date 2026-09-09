@@ -9,6 +9,7 @@ categorical produces a one-hot matrix with three thousand columns.
 from __future__ import annotations
 
 import io
+import re
 import unicodedata
 
 import numpy as np
@@ -108,8 +109,20 @@ def non_empty(s: pd.Series) -> pd.Series:
     return s[s.notna() & (s.str.strip() != "")]
 
 
+# Only a comma used as a thousands separator, in the strict grouping a US-style
+# number uses. Stripping commas unconditionally turns the European "1.234,50",
+# which means one thousand two hundred and thirty four, into 1.2345 - a silent
+# error of three orders of magnitude that then flows into every numeric check.
+# Where the meaning is ambiguous the value is refused rather than guessed at.
+_GROUPED = re.compile(r"^-?\d{1,3}(,\d{3})+(\.\d+)?$")
+
+
+def _degroup(value: str) -> str:
+    return value.replace(",", "") if _GROUPED.match(value.strip()) else value
+
+
 def as_numeric(s: pd.Series) -> pd.Series:
-    return pd.to_numeric(present(s).str.replace(",", "", regex=False), errors="coerce")
+    return pd.to_numeric(present(s).map(_degroup), errors="coerce")
 
 
 def as_datetime(s: pd.Series) -> pd.Series:

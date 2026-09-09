@@ -45,8 +45,10 @@ def parse_number(value) -> float | None:
         text = text[1:-1].strip()
 
     text = re.sub(f"[{re.escape(CURRENCY)}]", "", text).strip()
-    # Thousands separators, but only between digits, so "1,5" stays suspicious.
-    text = re.sub(r"(?<=\d),(?=\d{3}\b)", "", text)
+    # Thousands separators only in the strict grouping. "1.234,50" is European
+    # for 1234.50 and is refused rather than read as 1.2345.
+    if re.match(r"^-?\d{1,3}(,\d{3})+(\.\d+)?\s*", text):
+        text = re.sub(r"(?<=\d),(?=\d{3})", "", text)
     text = text.replace(" ", "") if re.fullmatch(r"-?[\d\s]*\.?\d+", text) else text
 
     if text.startswith("-") and text[1:2] == " ":
