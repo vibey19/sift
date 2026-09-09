@@ -6,6 +6,11 @@
 //   VITE_FIXTURE_DELAY=8000 npm run dev   (to sit in the loading state)
 
 const USE_FIXTURES = import.meta.env.VITE_USE_FIXTURES === 'true'
+// Empty in development, where vite proxies /api to the local server. In a
+// build it is the deployed API's origin, because the two are no longer served
+// from the same host. Trailing slashes are trimmed so that setting it to
+// "https://x.onrender.com/" does not produce "//api/audit".
+const API_BASE = (import.meta.env.VITE_API_BASE ?? '').replace(/\/+$/, '')
 const FIXTURE_DELAY = Number(import.meta.env.VITE_FIXTURE_DELAY ?? 400)
 
 // Kept as dynamic imports so the JSON never reaches the production bundle.
@@ -16,11 +21,11 @@ const FIXTURES = {
   audit_no_label: () => import('./fixtures/audit_no_label.json'),
 }
 
-// The platform refuses a request body over 4.5MB. CSV compresses about eight to
-// one, so gzipping the payload is the difference between refusing a thirty
-// megabyte file and auditing it. Below the threshold the saving is not worth a
-// pass over the string.
-const BODY_LIMIT = 4.5 * 1024 * 1024
+// Gzipping the upload is no longer the difference between a file being refused
+// and audited, now that the API is not behind a 4.5MB serverless body limit. It
+// is kept because a large CSV compresses about five to one and the upload is
+// the slowest part of the round trip. Below the threshold the saving is not
+// worth a pass over the string.
 const COMPRESS_ABOVE = 256 * 1024
 
 export class ApiError extends Error {
@@ -65,17 +70,10 @@ async function post(path, body) {
   // Serialised before the try, so a bad payload cannot masquerade as the network
   // being down. That exact confusion cost an afternoon once.
   const payload = await encodeBody(body)
-  if (payload.bytes > BODY_LIMIT) {
-    throw new ApiError(
-      `That file is ${(payload.bytes / 1024 / 1024).toFixed(1)}MB even after compression, over ` +
-        'the 4.5MB the server will accept in one request. Sample it down and audit the sample.',
-      413,
-    )
-  }
 
   let response
   try {
-    response = await fetch(path, {
+    response = await fetch(API_BASE + path, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...payload.headers },
       body: payload.body,

@@ -1,0 +1,35 @@
+# The audit API, deployed on its own.
+#
+# It used to be a serverless function beside the frontend. pandas, numpy, scipy
+# and scikit-learn come to about 300MB installed, which is over the bundle limit
+# a function is allowed, and no amount of excluding project files closes a gap
+# that is entirely dependencies. A plain server has no such limit.
+#
+# Two things came free with the move: requests are no longer capped at the 4.5MB
+# a serverless request body allows, and the audit is no longer racing a function
+# timeout.
+services:
+  - type: web
+    name: sift-api
+    runtime: python
+    # Free fits. Measured peak resident memory is 159MB with the libraries
+    # loaded, 186MB auditing 10,000 rows and 305MB auditing 50,000, which is the
+    # row limit; the free instance has 512MB. What free costs instead is a spin
+    # down after fifteen minutes idle, so the first request after a quiet spell
+    # waits around fifty seconds for the process to come back. Move to starter
+    # if that matters more than the seven dollars.
+    plan: free
+    region: oregon
+    branch: main
+    buildCommand: pip install -r requirements.txt
+    # One worker on purpose. The audit is CPU-bound and holds the whole frame in
+    # memory; a second worker doubles the memory for no more throughput.
+    startCommand: uvicorn api.index:app --host 0.0.0.0 --port $PORT --workers 1
+    healthCheckPath: /api/health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.13
+      # Narrow this to the deployed frontend once it has a URL. See api/index.py
+      # for why the default is not the hole it appears to be.
+      - key: SIFT_ALLOWED_ORIGINS
+        value: "*"

@@ -1,5 +1,6 @@
 import gzip
 import logging
+import os
 import sys
 import zlib
 from pathlib import Path
@@ -13,12 +14,32 @@ import numpy
 import pandas
 import sklearn
 from fastapi import FastAPI, HTTPException, Request
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, ValidationError
 
 from sift import runner
 
 app = FastAPI(title="Sift", docs_url=None, redoc_url=None)
+
+# The page and the API are served from different hosts now, so the browser will
+# not call one from the other without being told it is allowed.
+#
+# The default is every origin, and that is not the oversight it looks like.
+# There is no session, no cookie and no credential of any kind here: the API
+# reads a CSV out of the request body, answers, and forgets it. An origin
+# restriction protects a user from their own browser being used against a
+# service they are logged into, and there is nothing here to be logged into.
+# Set SIFT_ALLOWED_ORIGINS to a comma-separated list to narrow it anyway.
+_origins = [o.strip() for o in os.getenv("SIFT_ALLOWED_ORIGINS", "*").split(",") if o.strip()]
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=_origins,
+    allow_credentials=False,
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["Content-Type", "X-Sift-Compression"],
+    max_age=86400,
+)
 
 
 @app.exception_handler(Exception)

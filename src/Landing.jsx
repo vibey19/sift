@@ -52,7 +52,7 @@ const STEPS = [
 ]
 
 const LIMITS = [
-  'Files up to 50,000 rows. The upload is compressed, so that is the real limit rather than the 4.5MB request body.',
+  'Files up to 50,000 rows. The upload is compressed on the way out, so a file that size arrives in well under a megabyte.',
   'Classification labels only. Regression targets need a different mislabel formulation.',
   'CSV and TSV only.',
   'Nothing is saved. Reload the page and your work is gone.',

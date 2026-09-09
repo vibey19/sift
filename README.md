@@ -89,7 +89,7 @@ Accuracy falls and the flag count nearly triples, because without the leak the m
 
 ## What it can't do
 
-- Files up to 50,000 rows. The request body is capped at 4.5MB by the platform, but the browser gzips the upload and CSV compresses about five to one, so a full 50,000-row file arrives in well under a megabyte and the row limit binds first. A file that is both long and very wide can still be refused, and the fix for that is client-side upload straight to blob storage, which I have not built.
+- Files up to 50,000 rows. The browser gzips the upload and CSV compresses about five to one, so a file that size arrives in well under a megabyte. The row limit is the real one, and it is there because the audit holds the whole frame in memory.
 - Classification labels only. Regression targets need a different mislabel formulation and I have not written it.
 - CSV and TSV only.
 - Nothing is saved. Reload the page and your work is gone. That is deliberate, not an oversight. The backend stores nothing at all.

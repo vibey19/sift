@@ -1,0 +1,10 @@
+# The API is deployed separately, on a host without a bundle size limit. If
+# Vercel can see these it will build a Python function out of api/ and fail on
+# the size of scipy, which is the whole reason the API moved.
+api/
+requirements.txt
+requirements-dev.txt
+render.yaml
+tests/
+scripts/
+pytest.ini
