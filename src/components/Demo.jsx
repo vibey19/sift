@@ -13,7 +13,7 @@ export default function Demo() {
 
   return (
     <section className="section demo" id="demo">
-      <div className="wrap">
+      <div className="wrap" data-reveal>
         <p className="eyebrow" style={{ color: 'var(--lime)' }}>A real run</p>
         <h2>This is what it says about the sample dataset.</h2>
         <p className="lede" style={{ marginBottom: 34 }}>

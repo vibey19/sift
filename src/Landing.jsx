@@ -2,6 +2,8 @@ import { useEffect } from 'react'
 
 import Demo from './components/Demo.jsx'
 import DropCard from './components/DropCard.jsx'
+import ThemeToggle from './components/ThemeToggle.jsx'
+import { useReveal } from './useReveal.js'
 
 const GITHUB = 'https://github.com/vibey19/sift'
 
@@ -57,6 +59,8 @@ const LIMITS = [
 export default function Landing({ onOpen }) {
   // On a cold load the browser tries to reach the anchor before React has
   // rendered it, so the jump has to happen again once the page exists.
+  useReveal()
+
   useEffect(() => {
     const { hash } = window.location
     if (!hash) return
@@ -80,6 +84,7 @@ export default function Landing({ onOpen }) {
             <a className="plain" href="#demo">Demo</a>
             <a className="plain" href="#catches">Checks</a>
             <a className="plain" href={GITHUB}>GitHub</a>
+            <ThemeToggle />
             <a className="btn btn-primary" href="/app" onClick={openBlank}>Open the auditor</a>
           </div>
         </div>
@@ -113,7 +118,7 @@ export default function Landing({ onOpen }) {
       </div>
 
       <section className="section">
-        <div className="wrap prose">
+        <div className="wrap prose" data-reveal>
           <p className="eyebrow">The problem</p>
           <h2>Usually the model is fine.</h2>
           <p>
@@ -133,7 +138,7 @@ export default function Landing({ onOpen }) {
       <Demo />
 
       <section className="section" id="catches">
-        <div className="wrap">
+        <div className="wrap" data-reveal>
           <p className="eyebrow">What it catches</p>
           <h2>Fifteen checks, four of which matter most.</h2>
           <div className="grid-2" style={{ marginTop: 34 }}>
@@ -149,7 +154,7 @@ export default function Landing({ onOpen }) {
       </section>
 
       <section className="section-tight">
-        <div className="wrap">
+        <div className="wrap" data-reveal>
           <p className="eyebrow">How it works</p>
           <div className="grid-3" style={{ marginTop: 24 }}>
             {STEPS.map(([n, title, body]) => (
@@ -164,7 +169,7 @@ export default function Landing({ onOpen }) {
       </section>
 
       <section className="section">
-        <div className="wrap">
+        <div className="wrap" data-reveal>
           <div className="card" style={{ padding: 40 }}>
             <p className="label" style={{ marginBottom: 10 }}>Why you can trust the flags</p>
             <h2>It tells you when to ignore it.</h2>
@@ -191,7 +196,7 @@ export default function Landing({ onOpen }) {
       </section>
 
       <section className="section-tight">
-        <div className="wrap prose">
+        <div className="wrap prose" data-reveal>
           <p className="eyebrow">Limits</p>
           <h2>What it can't do.</h2>
           <div className="limits">

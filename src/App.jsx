@@ -7,6 +7,7 @@ import ColumnMap from './components/ColumnMap.jsx'
 import IssueDetail from './components/IssueDetail.jsx'
 import IssueList from './components/IssueList.jsx'
 import Summary from './components/Summary.jsx'
+import ThemeToggle from './components/ThemeToggle.jsx'
 import Upload from './components/Upload.jsx'
 
 // Mirrors api/sift/config.py. Checked here so an oversized file is refused with
@@ -158,6 +159,7 @@ export default function App({ handoff, onLeave }) {
             <span className="label mono" style={{ textTransform: 'none' }}>{dataset.name}</span>
           )}
           <button className="link-back" onClick={onLeave}>← back to the site</button>
+          <ThemeToggle />
         </span>
       </header>
 

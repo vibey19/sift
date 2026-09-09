@@ -61,7 +61,7 @@ export default function DropCard({ onOpen }) {
           onChange={(e) => e.target.files[0] && take(e.target.files[0])}
         />
         <p className="start-note">
-          Parsed in your browser. Audited by a stateless function. Never stored.
+          Parsed in your browser. Audited, then forgotten. Never stored.
         </p>
       </div>
 
