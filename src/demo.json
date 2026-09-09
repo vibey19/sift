@@ -1,0 +1,117 @@
+{
+  "dataset": "churn_dirty.csv",
+  "n_rows": 3075,
+  "n_cols": 14,
+  "cv_accuracy": 0.985040650406504,
+  "high": 2,
+  "medium": 12,
+  "low": 3,
+  "rows_affected": 2306,
+  "issues": [
+    {
+      "id": "leakage:cancellation_reason",
+      "check": "C10_leakage",
+      "severity": "high",
+      "title": "'cancellation_reason' predicts 'churned' on its own at 0.99",
+      "detail": "A depth-3 tree on 'cancellation_reason' alone recovers the label 99% of the time, against 56% for always guessing the biggest class. A single column this accurate is not a strong feature, it is the answer copied into the input, usually written after the outcome was known. Anything trained with it will score well here and fail on new data.",
+      "column": "cancellation_reason",
+      "total_affected": 3075,
+      "row_indices": []
+    },
+    {
+      "id": "train_test_overlap",
+      "check": "D4_train_test_overlap",
+      "severity": "high",
+      "title": "50 rows appear on both sides of 'split'",
+      "detail": "50 rows appear identically on both sides of 'split'. Anything measured on this split is measuring memorisation. This is the failure that produces a high validation score with nothing in the training curve to warn you, so it is worth fixing before anything else on this list.",
+      "column": "split",
+      "total_affected": 50,
+      "row_indices": [
+        41,
+        212,
+        247,
+        274,
+        517,
+        744,
+        808,
+        887
+      ]
+    },
+    {
+      "id": "mislabels:churned",
+      "check": "R1_mislabels",
+      "severity": "medium",
+      "title": "39 rows have a label the model disagrees with",
+      "detail": "39 rows carry a label the model disagrees with, having never seen those rows during training. Cross-validated accuracy is 0.99, so the model is worth listening to. The most confident disagreements are ranked first.",
+      "column": "churned",
+      "total_affected": 39,
+      "row_indices": [
+        743,
+        1435,
+        1805,
+        25,
+        1152,
+        385,
+        1886,
+        2261
+      ]
+    },
+    {
+      "id": "near_duplicates",
+      "check": "D2_near_duplicates",
+      "severity": "medium",
+      "title": "20 near-duplicate row pairs",
+      "detail": "20 pairs of rows agree on every field but one, covering 40 rows. Most commonly 'tenure_months' differs slightly. Near-copies usually come from a re-import or a partial edit, and they weight the same record twice.",
+      "column": null,
+      "total_affected": 40,
+      "row_indices": [
+        60,
+        270,
+        360,
+        444,
+        448,
+        794,
+        799,
+        1148
+      ]
+    },
+    {
+      "id": "inconsistent:plan",
+      "check": "C5_categorical_inconsistency",
+      "severity": "medium",
+      "title": "'plan' has 1 value spelled more than one way",
+      "detail": "' Premium ', 'PREMIUM', 'Premium', 'premium' are the same value written differently, and every model will treat them as separate categories. 93 rows use a non-canonical spelling.",
+      "column": "plan",
+      "total_affected": 93,
+      "row_indices": [
+        14,
+        37,
+        57,
+        95,
+        132,
+        142,
+        171,
+        181
+      ]
+    },
+    {
+      "id": "outliers:tenure_months",
+      "check": "C7_outliers",
+      "severity": "medium",
+      "title": "12 outlying values in 'tenure_months'",
+      "detail": "12 rows sit far outside the rest of 'tenure_months'. The most extreme is 6900 against a median of 37. Measured against median absolute deviation, so a few large values cannot inflate the threshold and hide inside it.",
+      "column": "tenure_months",
+      "total_affected": 12,
+      "row_indices": [
+        330,
+        336,
+        503,
+        973,
+        1140,
+        1158,
+        1227,
+        1454
+      ]
+    }
+  ]
+}
