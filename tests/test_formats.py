@@ -50,6 +50,28 @@ DATES = [
 BOOLEANS = [("Y", True), ("yes", True), ("TRUE", True), ("1", True), ("on", True),
             ("N", False), ("no", False), ("FALSE", False), ("0", False), ("maybe", None)]
 
+MARKUP = [
+    ("Great <b>product</b> &amp; fast", "Great product & fast"),
+    ("one<br>two", "one two"),
+    ("<p class=\"lead\">hello</p>", "hello"),
+    ("&#8212; and &#x2014;", chr(0x2014) + " and " + chr(0x2014)),
+    ("&nbsp;&nbsp;spaced&nbsp;", "spaced"),
+    # Not markup, and must survive untouched.
+    ("a < b and 3 > 2", "a < b and 3 > 2"),
+    ("AT&T and R&D", "AT&T and R&D"),
+    ("&someunknownthing;", "&someunknownthing;"),
+    ("", ""),
+]
+
+INVISIBLE = [
+    ("Lon" + chr(0x200B) + "don", "London"),
+    ("New" + chr(0x00A0) + "York", "New York"),
+    (chr(0xFEFF) + "id", "id"),
+    ("soft" + chr(0x00AD) + "break", "softbreak"),
+    ("nothing wrong here", "nothing wrong here"),
+    ("", ""),
+]
+
 
 @pytest.mark.parametrize("text,expected", NUMBERS)
 def test_numbers_are_read_through_their_formatting(text, expected):
@@ -64,6 +86,16 @@ def test_dates_are_read_in_the_formats_people_type(text, dayfirst, expected):
 @pytest.mark.parametrize("text,expected", BOOLEANS)
 def test_booleans_are_read_in_every_spelling(text, expected):
     assert formats.parse_boolean(text) == expected
+
+
+@pytest.mark.parametrize("text,expected", MARKUP)
+def test_markup_comes_off_and_nothing_else_does(text, expected):
+    assert formats.strip_markup(text) == expected
+
+
+@pytest.mark.parametrize("text,expected", INVISIBLE)
+def test_invisible_characters_come_out(text, expected):
+    assert formats.strip_invisible(text) == expected
 
 
 def test_a_plain_number_is_not_reported_as_needing_work():
@@ -84,14 +116,18 @@ def test_the_python_and_javascript_parsers_agree():
         "numbers": [text for text, _ in NUMBERS],
         "dates": [[text, first] for text, first, _ in DATES],
         "booleans": [text for text, _ in BOOLEANS],
+        "markup": [text for text, _ in MARKUP],
+        "invisible": [text for text, _ in INVISIBLE],
     }
     script = """
-import { parseNumber, parseDate, parseBoolean } from './src/formats.js'
+import { parseNumber, parseDate, parseBoolean, stripMarkup, stripInvisible } from './src/formats.js'
 const cases = JSON.parse(process.env.SIFT_CASES)
 console.log(JSON.stringify({
   numbers: cases.numbers.map((v) => parseNumber(v)),
   dates: cases.dates.map(([v, f]) => parseDate(v, f)),
   booleans: cases.booleans.map((v) => parseBoolean(v)),
+  markup: cases.markup.map(stripMarkup),
+  invisible: cases.invisible.map(stripInvisible),
 }))
 """
     # Passed through the environment rather than argv, because argv indices
@@ -107,6 +143,8 @@ console.log(JSON.stringify({
     assert js["numbers"] == [expected for _, expected in NUMBERS]
     assert js["dates"] == [expected for _, _, expected in DATES]
     assert js["booleans"] == [expected for _, expected in BOOLEANS]
+    assert js["markup"] == [expected for _, expected in MARKUP]
+    assert js["invisible"] == [expected for _, expected in INVISIBLE]
 
 
 def audit(df):

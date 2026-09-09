@@ -3,7 +3,15 @@
 // Follows RFC 4180: fields may be quoted, quotes escape by doubling, and a quoted
 // field may contain the delimiter or a newline.
 
-import { detectDelimiter, fieldWidth, findHeader, normaliseHeaders } from './parsing.js'
+import {
+  combineHeaders,
+  detectDelimiter,
+  fieldWidth,
+  findHeader,
+  headerSpan,
+  normaliseHeaders,
+  repairMojibake,
+} from './parsing.js'
 
 const QUOTE = '"'
 
@@ -13,7 +21,10 @@ export function parseCsv(text, { delimiter } = {}) {
   if (typeof text !== 'string') throw new TypeError('parseCsv expects a string')
   // A byte order mark would otherwise become part of the first column name and
   // every later lookup by that name would miss.
-  const source = text.charCodeAt(0) === 0xfeff ? text.slice(1) : text
+  // Repaired before a character of it is read. A file written as UTF-8 and
+  // read as Western European carries the damage in its column names too, and
+  // a column named with the damage in it is one no fix can find afterwards.
+  const source = repairMojibake(text.charCodeAt(0) === 0xfeff ? text.slice(1) : text)
   const sep = delimiter ?? detectDelimiter(source)
 
   const rows = []
@@ -75,12 +86,16 @@ export function parseCsv(text, { delimiter } = {}) {
   // the first row shaped like one, and anything above it is dropped.
   const width = fieldWidth(source, sep)
   const headerAt = findHeader(rows, width)
+  const pad = (cells) =>
+    cells.length >= width ? cells.slice(0, width) : cells.concat(Array(width - cells.length).fill(''))
+  // A header split over two rows is what a merged spreadsheet cell becomes.
+  const span = headerSpan(rows, width, headerAt)
   const columns = normaliseHeaders(
-    rows[headerAt].length >= width
-      ? rows[headerAt].slice(0, width)
-      : rows[headerAt].concat(Array(width - rows[headerAt].length).fill('')),
+    span === 1
+      ? pad(rows[headerAt])
+      : combineHeaders(pad(rows[headerAt]), pad(rows[headerAt + 1]), width),
   )
-  const body = rows.slice(headerAt + 1).map((cells) => {
+  const body = rows.slice(headerAt + span).map((cells) => {
     if (cells.length === width) return cells
     // Ragged rows are common in exports and are not worth rejecting a file over.
     // C1 will report the gaps that padding creates.

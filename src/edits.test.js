@@ -11,6 +11,8 @@ import {
   FILL_MISSING,
   NORMALIZE,
   RELABEL,
+  STRIP_INVISIBLE,
+  STRIP_MARKUP,
   TRIM,
   replay,
 } from './edits.js'
@@ -169,4 +171,35 @@ test('floating point noise does not leak into the file', () => {
 test('trim strips padding from every column', () => {
   const out = replay(['a', 'b'], [[' 1 ', 'x  '], ['2', ' y']], [{ op: TRIM }])
   assert.deepEqual(out.rows, [['1', 'x'], ['2', 'y']])
+})
+
+// --- the two ops that remove characters rather than rows ---------------------
+
+test('stripping markup leaves the words and the spacing between them', () => {
+  const out = replay(
+    ['body'],
+    [['Great <b>product</b> &amp; fast'], ['one<br>two'], ['a < b and 3 > 2']],
+    [{ op: STRIP_MARKUP, column: 'body' }],
+  )
+  assert.deepEqual(out.rows, [['Great product & fast'], ['one two'], ['a < b and 3 > 2']])
+})
+
+test('stripping invisible characters runs over every column', () => {
+  // A zero-width character is not a property of the column it landed in; it
+  // came from wherever the text was copied from, so the op is not per column.
+  const out = replay(
+    ['city', 'note'],
+    [['Lon​don', 'New York'], ['Leeds', 'fine']],
+    [{ op: STRIP_INVISIBLE }],
+  )
+  assert.deepEqual(out.rows, [['London', 'New York'], ['Leeds', 'fine']])
+})
+
+test('a value with nothing wrong with it is left byte for byte alone', () => {
+  const original = [['plain text'], ['AT&T and R&D']]
+  const out = replay(['body'], original, [
+    { op: STRIP_MARKUP, column: 'body' },
+    { op: STRIP_INVISIBLE },
+  ])
+  assert.deepEqual(out.rows, original)
 })

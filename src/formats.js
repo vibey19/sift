@@ -83,3 +83,57 @@ export function parseBoolean(value) {
   if (FALSE_WORDS.has(text)) return false
   return null
 }
+
+
+// --- markup and invisible characters ----------------------------------------
+// The twin of api/sift/formats.py. Written by code point on both sides so no
+// character here depends on surviving a copy and paste, and tests/test_formats.py
+// fails if the two ever disagree about a value.
+const ENTITIES = {
+  amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ',
+  ndash: '\u2013', mdash: '\u2014', hellip: '\u2026',
+  lsquo: '\u2018', rsquo: '\u2019', ldquo: '\u201c', rdquo: '\u201d',
+  bull: '\u2022', middot: '\u00b7', deg: '\u00b0', copy: '\u00a9',
+  reg: '\u00ae', trade: '\u2122', euro: '\u20ac', pound: '\u00a3',
+}
+
+const TAG = /<\/?[a-zA-Z][a-zA-Z0-9]*(?:\s[^<>]*)?\/?>/g
+const ENTITY = new RegExp(
+  `&(?:${Object.keys(ENTITIES).sort().join('|')}|#\\d{1,5}|#x[0-9a-fA-F]{1,4});`,
+  'g',
+)
+
+export const MARKUP = new RegExp(`${TAG.source}|${ENTITY.source}`)
+
+function entity(match) {
+  const body = match.slice(1, -1)
+  if (body.startsWith('#')) {
+    const code = body[1] === 'x' || body[1] === 'X' ? parseInt(body.slice(2), 16) : Number(body.slice(1))
+    return Number.isFinite(code) && code > 0 && code <= 0x10ffff ? String.fromCodePoint(code) : match
+  }
+  return ENTITIES[body] ?? match
+}
+
+// Tags become a space rather than nothing, so "one<br>two" does not come back
+// as one word, and the run of spaces that leaves is collapsed afterwards.
+export function stripMarkup(value) {
+  return String(value ?? '')
+    .replace(TAG, ' ')
+    .replace(ENTITY, entity)
+    .split(/\s+/)
+    .filter(Boolean)
+    .join(' ')
+}
+
+const ZERO_WIDTH = '\u200b\u200c\u200d\u2060\ufeff\u200e\u200f\u00ad'
+const SPACE_LIKE = '\u00a0\u2007\u202f\u2009\u2002\u2003'
+export const INVISIBLE = new RegExp(`[${ZERO_WIDTH}${SPACE_LIKE}]`)
+
+export function stripInvisible(value) {
+  let out = ''
+  for (const char of String(value ?? '')) {
+    if (ZERO_WIDTH.includes(char)) continue
+    out += SPACE_LIKE.includes(char) ? ' ' : char
+  }
+  return out
+}

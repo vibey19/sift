@@ -145,6 +145,10 @@ function describeEdit(edit) {
       return `Normalised ${edit.from.length} spellings in \`${edit.column}\` to \`${edit.to}\`.`
     case 'drop_column':
       return `Dropped the \`${edit.column}\` column.`
+    case 'strip_markup':
+      return `Removed the HTML markup from \`${edit.column}\`.`
+    case 'strip_invisible':
+      return 'Removed zero-width characters and folded non-breaking spaces to ordinary ones.'
     default:
       return edit.op
   }

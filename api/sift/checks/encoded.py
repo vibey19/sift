@@ -226,6 +226,50 @@ def _out_of_band_codes(df: pd.DataFrame, profiles: list[dict]) -> list[dict]:
     return issues
 
 
+def _markup_in_text(df: pd.DataFrame, profiles: list[dict]) -> list[dict]:
+    """Scraped text with the page still attached.
+
+    A review body carrying <br> and &amp; is the HTML it was lifted from rather
+    than what anyone wrote. Left in, it is counted as words by any model reading
+    the column, and read by any human as noise.
+    """
+    issues = []
+    for p in profiles:
+        col = p["name"]
+        if p["inferred_type"] not in (prof.TEXT, prof.CATEGORICAL):
+            continue
+        values = prof.present(df[col])
+        if len(values) < config.FORMAT_MIN_VALUES:
+            continue
+        hits = values.str.contains(formats.MARKUP, regex=True)
+        count = int(hits.sum())
+        if count < config.MARKUP_MIN_COUNT or count / len(values) < config.MARKUP_MIN_SHARE:
+            continue
+
+        seen = {m.group(0) for v in values[hits].head(200) for m in formats.MARKUP.finditer(str(v))}
+        issues.append(
+            make_issue(
+                id=f"markup:{col}",
+                check="C21_markup",
+                scope="column",
+                severity=MEDIUM,
+                title=f"{count} values in '{col}' still contain HTML",
+                detail=(
+                    f"{count} of the {len(values)} filled values in '{col}' carry tags or "
+                    "character entities, which is what text looks like when it has been "
+                    "lifted off a web page rather than written. Every model reading the "
+                    "column counts them as words, and every person reading it has to "
+                    "ignore them."
+                ),
+                column=col,
+                row_indices=values.index[hits],
+                suggested_action="strip_markup",
+                evidence={"examples": sorted(seen)[:4]},
+            )
+        )
+    return issues
+
+
 def run(df: pd.DataFrame, profiles: list[dict]) -> tuple[list[dict], list[dict]]:
     return (
         [
@@ -233,6 +277,7 @@ def run(df: pd.DataFrame, profiles: list[dict]) -> tuple[list[dict], list[dict]]
             *_mixed_dates(df, profiles),
             *_inconsistent_booleans(df, profiles),
             *_out_of_band_codes(df, profiles),
+            *_markup_in_text(df, profiles),
         ],
         [],
     )

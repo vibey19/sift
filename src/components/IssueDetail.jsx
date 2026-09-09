@@ -1,4 +1,12 @@
-import { DEDUPE, DROP_COLUMN, DROP_ROWS, NORMALIZE, RELABEL } from '../edits.js'
+import {
+  DEDUPE,
+  DROP_COLUMN,
+  DROP_ROWS,
+  NORMALIZE,
+  RELABEL,
+  STRIP_INVISIBLE,
+  STRIP_MARKUP,
+} from '../edits.js'
 import RowTable from './RowTable.jsx'
 
 export default function IssueDetail({ issue, dataset, current, onEdit }) {
@@ -112,6 +120,18 @@ function actionFor(issue) {
         }),
       }
     }
+    case 'strip_markup':
+      return {
+        op: STRIP_MARKUP,
+        label: () => `Take the HTML out of '${issue.column}'`,
+        edit: () => ({ op: STRIP_MARKUP, column: issue.column }),
+      }
+    case 'strip_invisible':
+      return {
+        op: STRIP_INVISIBLE,
+        label: (rows) => `Clear the invisible characters out of ${rows.length} cells`,
+        edit: () => ({ op: STRIP_INVISIBLE }),
+      }
     case 'normalize_values': {
       const canonical = issue.evidence?.canonical ?? {}
       const entries = Object.entries(canonical)

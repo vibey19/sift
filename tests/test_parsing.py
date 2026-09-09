@@ -49,6 +49,17 @@ CORPUS = {
     "header only": "a,b\n",
     "unicode headers": "café,naïve\n1,2\n",
     "semicolon with comma decimals": "amt;n\n1,50;2\n3,25;4\n",
+    # A merged cell in a spreadsheet becomes a gap in the first header row and
+    # the real names on the second.
+    "two row header": "Region,Q1,,Q2,\n,revenue,units,revenue,units\nNorth,5,2,6,3\nSouth,7,1,8,4\n",
+    "two row header after a title": "Sales report\n\nRegion,Q1,,Q2,\n,rev,units,rev,units\nNorth,5,2,6,3\nSouth,7,1,8,4\n",
+    # A blank name in an ordinary header, which must not be read as a merge.
+    "blank name with a text row under it": "a,,c\nx,y,z\n1,2,3\n",
+    # Text all the way down: a two row header cannot be told from data, and is
+    # not guessed at.
+    "gappy header over text": "a,,c\np,q,r\ns,t,u\n",
+    # UTF-8 read as Western European, in the header and in the values.
+    "mojibake": "paÃ­s,aÃ±o\nEspaÃ±a,2024\nPerÃº,2023\n",
 }
 
 

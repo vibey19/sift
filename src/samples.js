@@ -1,3 +1,5 @@
+import { decodeBytes } from './decode.js'
+
 // The two sample datasets, described by what is actually wrong with them. Shared
 // by the landing page's drop card and the auditor's empty state so the two can
 // never drift apart.
@@ -28,9 +30,12 @@ export const ACCEPTS = /\.(csv|tsv|txt)$/i
 export async function readSample(sample) {
   const response = await fetch(sample.path)
   if (!response.ok) throw new Error(`Could not load ${sample.name}`)
+  // Through the same decoder as an upload, so a sample and a file the user
+  // brings take exactly the same path into the parser.
+  const { text, encoding } = decodeBytes(await response.arrayBuffer())
   return {
     name: sample.name,
-    text: await response.text(),
-    hints: { label: sample.label, split: sample.split },
+    text,
+    hints: { label: sample.label, split: sample.split, encoding },
   }
 }

@@ -47,6 +47,10 @@ def _pad_or_trim(width: int):
 
 
 def load_csv(text: str, delimiter: str | None = None) -> pd.DataFrame:
+    # Before anything reads a character of it. A file written as UTF-8 and read
+    # as Western European carries the damage in its column names too, and a
+    # column named "PaÃ­s" is a column no fix can find later.
+    text = parsing.repair_mojibake(text)
     if delimiter is None:
         delimiter = parsing.detect_delimiter(text)
 
@@ -85,17 +89,26 @@ def load_csv(text: str, delimiter: str | None = None) -> pd.DataFrame:
 
     rows = raw.fillna("").astype(str).values.tolist()
     header_at = parsing.find_header(rows, width)
-    frame = raw.iloc[header_at + 1:].reset_index(drop=True)
-    frame.columns = parsing.normalise_headers(list(raw.iloc[header_at]))
+    span = parsing.header_span(rows, width, header_at)
+    names = (
+        list(raw.iloc[header_at])
+        if span == 1
+        else parsing.combine_headers(rows[header_at], rows[header_at + 1], width)
+    )
+    frame = raw.iloc[header_at + span:].reset_index(drop=True)
+    frame.columns = parsing.normalise_headers(names)
     return frame
 
 
 def normalise_text(value: str) -> str:
     # NFKD splits accented characters so the combining marks can be dropped,
-    # which is what makes "Café" and "Cafe" group together in C5.
+    # which is what makes "Café" and "Cafe" group together in C5. It also splits
+    # a Hangul syllable into its parts, and those are not combining marks, so
+    # without putting the string back together afterwards every Korean value
+    # would come out as something no other spelling of it could ever match.
     stripped = unicodedata.normalize("NFKD", str(value))
     stripped = "".join(c for c in stripped if not unicodedata.combining(c))
-    return " ".join(stripped.split()).lower()
+    return unicodedata.normalize("NFC", " ".join(stripped.split())).lower()
 
 
 def is_sentinel(s: pd.Series) -> pd.Series:

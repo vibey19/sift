@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
 
+import { readFile } from '../decode.js'
 import { ACCEPTS, SAMPLES, readSample } from '../samples.js'
 
 // The auditor's entry point, on the landing page. Dropping a file here hands it
@@ -17,7 +18,8 @@ export default function DropCard({ onOpen }) {
       setError(`${file.name} is not a CSV or TSV. Sift reads those two formats.`)
       return
     }
-    onOpen({ name: file.name, text: await file.text() })
+    const { text, encoding } = await readFile(file)
+    onOpen({ name: file.name, text, hints: { encoding } })
   }
 
   const loadSample = async (sample) => {

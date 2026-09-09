@@ -94,3 +94,63 @@ def test_a_time_of_day_is_not_a_date(values, expected):
     # pandas reads "14:30:00" as that time today, inventing a date that is not
     # in the file and that changes every day the file is opened.
     assert prof.infer_type(pd.Series(values), len(values)) == expected
+
+
+# --- a header split over two rows --------------------------------------------
+#
+# A merged cell in a spreadsheet has no representation in CSV. "Q1" spanning two
+# columns comes out as "Q1" and then a blank, with the sub-headings underneath.
+# Read as one header, the file has a column named nothing and two named
+# "revenue"; read as a header plus a data row, it has a row of text where the
+# numbers should be.
+
+def test_a_merged_header_is_joined_into_one_name_per_column():
+    frame = prof.load_csv(
+        "Region,Q1,,Q2,\n"
+        ",revenue,units,revenue,units\n"
+        "North,5,2,6,3\n"
+        "South,7,1,8,4\n"
+    )
+    assert list(frame.columns) == [
+        "Region", "Q1 revenue", "Q1 units", "Q2 revenue", "Q2 units",
+    ]
+    assert len(frame) == 2
+
+
+def test_a_merged_header_is_found_under_a_preamble_too():
+    frame = prof.load_csv(
+        "Quarterly report\n"
+        "generated 2026-09-09\n"
+        "\n"
+        "Region,Q1,,Q2,\n"
+        ",revenue,units,revenue,units\n"
+        "North,5,2,6,3\n"
+        "South,7,1,8,4\n"
+    )
+    assert list(frame.columns)[1] == "Q1 revenue"
+    assert len(frame) == 2
+
+
+def test_an_ordinary_header_keeps_its_first_data_row():
+    frame = prof.load_csv("a,b,c\nx,y,z\n1,2,3\n")
+    assert list(frame.columns) == ["a", "b", "c"]
+    assert len(frame) == 2
+
+
+def test_a_table_of_text_is_not_guessed_at():
+    # With no numbers below it, a second row of words cannot be told from data,
+    # and inventing a two-row header would silently eat a record.
+    frame = prof.load_csv("a,,c\np,q,r\ns,t,u\n")
+    assert len(frame) == 2
+
+
+def test_a_second_row_carrying_numbers_is_data():
+    frame = prof.load_csv("a,,c\n1,2,3\n4,5,6\n")
+    assert len(frame) == 2
+
+
+def test_columns_that_would_collide_are_not_joined():
+    # Joining has to leave every column with a name of its own, or it has made
+    # the file worse than the reading it replaced.
+    frame = prof.load_csv("a,,c\nx,x,x\n1,2,3\n")
+    assert len(frame) == 2

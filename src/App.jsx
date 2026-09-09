@@ -80,7 +80,7 @@ export default function App({ handoff, onLeave }) {
       return
     }
 
-    setDataset({ name, csv: text, ...parsed })
+    setDataset({ name, csv: text, encoding: hints.encoding ?? null, ...parsed })
     setEdits([])
     setStage('profiling')
     try {
@@ -187,7 +187,12 @@ export default function App({ handoff, onLeave }) {
         <span className="label">dataset quality auditor</span>
         <span style={{ marginLeft: 'auto', display: 'flex', gap: 16, alignItems: 'baseline' }}>
           {dataset && (
-            <span className="label mono" style={{ textTransform: 'none' }}>{dataset.name}</span>
+            <span className="label mono" style={{ textTransform: 'none' }}>
+              {dataset.name}
+              {/* Said out loud only when it was not the obvious answer, because
+                  a file that had to be guessed at is worth knowing about. */}
+              {dataset.encoding && dataset.encoding !== 'utf-8' && ` · read as ${dataset.encoding}`}
+            </span>
           )}
           <button className="link-back" onClick={onLeave}>← back to the site</button>
           <ThemeToggle />

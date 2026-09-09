@@ -27,9 +27,15 @@ The rules:
    are a preamble and are dropped. That covers the title and generated-on lines
    a spreadsheet export puts at the top, and comment lines, without needing a
    rule for either.
+6. A header split over two rows, which is what a merged cell in a spreadsheet
+   becomes on the way out, is joined into one name per column.
+7. Text that was written as UTF-8 and read as Western European is repaired
+   before any of the above, because the damage reaches the column names too.
 """
 
 from __future__ import annotations
+
+import re
 
 CANDIDATES = (",", "\t", ";", "|")
 SAMPLE_LINES = 20
@@ -37,6 +43,26 @@ SAMPLE_LINES = 20
 MAX_PREAMBLE = 12
 # A header can contain a blank name, but not mostly blank names.
 MIN_FILLED_HEADER = 0.5
+
+# Windows-1252 for 0x80 to 0x9F, the only range where it differs from Latin-1.
+# Written out rather than left to the codec because the codec refuses the five
+# codes the table leaves undefined, while every browser decoder passes them
+# through as themselves - and a browser decoder is what produced the text this
+# function is handed.
+CP1252_HIGH = "".join(chr(c) for c in (
+    0x20AC, 0x81, 0x201A, 0x192, 0x201E, 0x2026, 0x2020, 0x2021, 0x2C6, 0x2030,
+    0x160, 0x2039, 0x152, 0x8D, 0x17D, 0x8F, 0x90, 0x2018, 0x2019, 0x201C,
+    0x201D, 0x2022, 0x2013, 0x2014, 0x2DC, 0x2122, 0x161, 0x203A, 0x153, 0x9D,
+    0x17E, 0x178,
+))
+_CP1252_TO_BYTE = {ord(char): 0x80 + index for index, char in enumerate(CP1252_HIGH)}
+
+# Anything that could have come from a single byte. Nothing outside this can be
+# part of the damage, so a file with none of it needs no further thought. A
+# regular expression rather than a loop: this runs on every upload.
+_FROM_A_BYTE = re.compile("[\u0080-\u00ff" + CP1252_HIGH + "]")
+
+_NUMERIC_CELL = re.compile(r"^-?[\d,]*\d(\.\d+)?$")
 
 
 def split_lines(text: str) -> list[str]:
@@ -77,6 +103,58 @@ def count_outside_quotes(line: str, delimiter: str) -> int:
         elif char == delimiter and not in_quotes:
             total += 1
     return total
+
+
+def _non_ascii(text: str) -> int:
+    return sum(1 for c in text if ord(c) > 127)
+
+
+def _to_bytes(text: str, table: str | None) -> bytes | None:
+    """Characters back to the bytes they were decoded from, or None.
+
+    Done with translate and a codec rather than a loop over the characters,
+    because this runs over the whole file on every upload and a Python-level
+    pass over four megabytes is seconds rather than milliseconds.
+    """
+    if table is not None:
+        text = text.translate(_CP1252_TO_BYTE)
+    try:
+        return text.encode("latin-1")
+    except UnicodeEncodeError:
+        return None
+
+
+def repair_mojibake(text: str) -> str:
+    """Undo a file that was written as UTF-8 and read as Western European.
+
+    "café" written as UTF-8 is the two bytes 0xC3 0xA9 where the accent is. Read
+    back one byte at a time as Windows-1252 those become "Ã©", and the file now
+    genuinely contains that text - no decoder can tell later that it was not
+    meant. Every join, every groupby and every exported row carries it.
+
+    The repair is the same trip backwards: write the characters out as
+    Windows-1252 and read the bytes as UTF-8. What makes it safe to do unasked
+    is that undamaged text almost never survives it. A real "é" is the single
+    byte 0xE9, which is not valid UTF-8 on its own, so the attempt fails and the
+    text is returned untouched. The count of non-ASCII characters has to fall as
+    well, since mojibake always turns one character into two or three.
+    """
+    if not _FROM_A_BYTE.search(text):
+        return text
+    for table in (CP1252_HIGH, None):
+        # Both tables are tried because both decoders are in use in the wild and
+        # they differ over 0x80 to 0x9F, which is where Cyrillic, Greek and
+        # Japanese bytes land.
+        raw = _to_bytes(text, table)
+        if raw is None:
+            continue
+        try:
+            candidate = raw.decode("utf-8")
+        except UnicodeDecodeError:
+            continue
+        if _non_ascii(candidate) < _non_ascii(text):
+            return candidate
+    return text
 
 
 def detect_delimiter(text: str) -> str:
@@ -172,3 +250,69 @@ def find_header(rows: list[list[str]], width: int) -> int:
         if len(row) >= width and filled / max(width, 1) > MIN_FILLED_HEADER:
             return index
     return 0
+
+
+def _looks_numeric(cell: str) -> bool:
+    text = str(cell).strip()
+    return bool(text) and bool(_NUMERIC_CELL.match(text))
+
+
+def header_span(rows: list[list[str]], width: int, header_at: int) -> int:
+    """How many rows the header occupies: 1 normally, 2 when it is split.
+
+    A merged cell in a spreadsheet has no representation in CSV. "Q1" spanning
+    two columns comes out as "Q1" followed by a blank, with "revenue" and
+    "units" on the row underneath. Read as one header that file has a column
+    called nothing and two called "revenue", and read as a header plus a data
+    row it has a row of text where the numbers should be.
+
+    The signature is a first row that cannot be the whole header - it leaves a
+    column unnamed - above a row that carries no numbers and fills the gap.
+    Three further conditions keep an ordinary header with a text row under it
+    from being eaten: every column has to end up named, no two columns may end
+    up with the same name, and the rows below the pair have to contain a number
+    somewhere, so that the row of text above them is visibly not more data. One
+    row is not enough to ask that of - the first record in a file is as likely as
+    any other to have a gap in it - so the sample is the same twenty lines the
+    rest of this module works from. A table that is text all the way down cannot
+    be told apart either way, and is left as the single-row header it appears
+    to be.
+    """
+    if header_at + 2 >= len(rows):
+        return 1
+    top = list(rows[header_at])[:width]
+    bottom = list(rows[header_at + 1])[:width]
+    if len(top) < width or len(bottom) < width:
+        return 1
+    if any(_looks_numeric(c) for c in bottom):
+        return 1
+    if all(str(c).strip() for c in top):
+        return 1  # the first row names every column, so it is the whole header
+
+    combined = combine_headers(top, bottom, width)
+    if not all(combined) or len(set(combined)) < width:
+        return 1
+    body = rows[header_at + 2 : header_at + 2 + SAMPLE_LINES]
+    if not any(_looks_numeric(c) for row in body for c in list(row)[:width]):
+        return 1
+    return 2
+
+
+def combine_headers(top: list[str], bottom: list[str], width: int) -> list[str]:
+    """Join a two-row header into one name per column.
+
+    The top row is carried across the blanks a merged cell leaves behind, so
+    "Q1, , Q2, " over "revenue, units, revenue, units" becomes "Q1 revenue",
+    "Q1 units", "Q2 revenue", "Q2 units".
+    """
+    names, parent = [], ""
+    for index in range(width):
+        above = str(top[index]).strip() if index < len(top) else ""
+        below = str(bottom[index]).strip() if index < len(bottom) else ""
+        if above:
+            parent = above
+        if parent and below and parent != below:
+            names.append(f"{parent} {below}")
+        else:
+            names.append(below or parent)
+    return names

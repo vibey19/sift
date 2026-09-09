@@ -177,3 +177,99 @@ def test_missing_categories_get_an_action_and_numbers_do_not():
     actions = {i["column"]: i["suggested_action"] for i in issues}
     assert actions.get("cat") == "fill_missing"
     assert actions.get("num") == "review", "a number must not be labelled Unknown"
+
+
+# --- C22 ordering between columns -------------------------------------------
+#
+# The opposite shape to C12 and C13. There the rule is the finding and has to be
+# exact; here the exceptions are the finding, so the rule has to be established
+# on nearly every row before a handful of violations mean anything at all.
+
+def dated(n=300, broken=()):
+    import datetime as dt
+
+    rows = []
+    for i in range(n):
+        ordered = dt.date(2024, 1, 1) + dt.timedelta(days=i % 250)
+        shipped = ordered + dt.timedelta(days=(i % 9) + 1)
+        if i in broken:
+            shipped = ordered - dt.timedelta(days=3)
+        rows.append((ordered.isoformat(), shipped.isoformat()))
+    return pd.DataFrame(rows, columns=["ordered", "shipped"])
+
+
+def test_a_ship_date_before_its_order_date_is_reported():
+    issues = find(audit(dated(broken=(5, 40, 111))), "C22_ordering_violation")
+    assert issues
+    assert issues[0]["severity"] == "high"
+    assert sorted(issues[0]["row_indices"]) == [5, 40, 111]
+
+
+def test_a_pair_that_is_always_in_order_is_not_a_finding():
+    # Nothing is wrong, so there is nothing to say. A rule with no exceptions is
+    # C13's territory, not this check's.
+    assert not find(audit(dated()), "C22_ordering_violation")
+
+
+def test_a_pair_with_no_order_to_it_is_left_alone():
+    rng = np.random.default_rng(0)
+    df = pd.DataFrame({
+        "a": [f"2024-01-{d:02d}" for d in rng.integers(1, 29, 300)],
+        "b": [f"2024-01-{d:02d}" for d in rng.integers(1, 29, 300)],
+    })
+    assert not find(audit(df), "C22_ordering_violation")
+
+
+def test_too_many_violations_means_there_was_no_rule():
+    # A fifth of the rows going the other way is not a rule with exceptions. It
+    # is two populations, and calling either one an error would be wrong.
+    issues = find(audit(dated(broken=tuple(range(0, 300, 5)))), "C22_ordering_violation")
+    assert not issues
+
+
+def test_a_minimum_above_its_maximum_is_reported():
+    rng = np.random.default_rng(1)
+    low = rng.uniform(5, 50, 300).round(2)
+    high = (low + rng.uniform(1, 30, 300)).round(2)
+    low[7], high[7] = high[7], low[7]
+    low[90], high[90] = high[90], low[90]
+    df = pd.DataFrame({"min_price": low, "max_price": high}).astype(str)
+    issues = find(audit(df), "C22_ordering_violation")
+    assert issues and sorted(issues[0]["row_indices"]) == [7, 90]
+
+
+def test_nothing_is_offered_to_fix():
+    # Which of the two values is the wrong one is not something the file says.
+    issues = find(audit(dated(broken=(5, 40))), "C22_ordering_violation")
+    assert issues and issues[0]["suggested_action"] == "review"
+
+
+# --- C13 on a wide file -------------------------------------------------------
+
+def test_arithmetic_is_still_found_among_two_dozen_columns():
+    # The cap used to be ten numeric columns, and a sales export with a dozen
+    # measures in it got no arithmetic checked at all. Candidates are now tried
+    # against a few complete rows first, which costs three multiplications and
+    # rejects almost all of them.
+    rng = np.random.default_rng(2)
+    n = 400
+    qty = rng.integers(1, 10, n)
+    price = rng.uniform(2, 60, n).round(2)
+    total = (qty * price).round(2)
+    data = {"qty": qty, "price": price, "total": total}
+    for i in range(22):
+        data[f"m{i}"] = rng.uniform(0, 100, n).round(2)
+    df = pd.DataFrame(data).astype(str)
+    df.loc[df.index[::40], "total"] = ""
+
+    issues = find(audit(df), "C13_arithmetic_relation", "total")
+    assert issues and issues[0]["evidence"]["operation"] == "product"
+    assert {issues[0]["evidence"]["left"], issues[0]["evidence"]["right"]} == {"qty", "price"}
+
+
+def test_a_wide_file_with_no_relation_in_it_reports_none():
+    rng = np.random.default_rng(3)
+    df = pd.DataFrame(
+        {f"m{i}": rng.uniform(0, 100, 300).round(2) for i in range(25)}
+    ).astype(str)
+    assert not find(audit(df), "C13_arithmetic_relation")

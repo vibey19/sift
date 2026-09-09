@@ -27,10 +27,41 @@ NUMERIC_PARSE_FRACTION = 0.90
 # Strings that mean "no value" in exports from the wild. Compared lowercased and
 # stripped. These are counted as missing by C1 and as non-numeric by C4, which is
 # deliberate: the same cell is both a gap and a reason the column will not parse.
+# The same handful of words in the languages an export is most likely to
+# arrive in. An export is only in English if the person who made it was.
+# Comparison happens after accents are stripped and the value is lowercased,
+# so the unaccented spelling is the one to list.
+FOREIGN_MISSING_TOKENS = frozenset(
+    {
+     # German, Dutch
+     "unbekannt", "keine angabe", "k.a.", "kein wert", "nicht verfugbar",
+     "entfallt", "onbekend", "geen", "niet beschikbaar",
+     # French
+     "inconnu", "inconnue", "non renseigne", "non disponible", "non applicable",
+     "sans objet", "vide",
+     # Spanish, Portuguese
+     "desconocido", "desconocida", "sin datos", "sin dato", "no disponible",
+     "no aplica", "ninguno", "ninguna", "desconhecido", "nao informado",
+     "sem dados", "nao disponivel", "nao se aplica",
+     # Italian
+     "sconosciuto", "non disponibile", "non applicabile", "nessuno",
+     # Nordic, Polish, Czech
+     "ukjent", "okand", "ukendt", "tuntematon", "brak", "brak danych",
+     "nieznany", "neznamy", "nezname",
+     # Russian
+     "неизвестно",
+     "нет данных",
+     "отсутствует",
+     # Japanese, Chinese, Korean
+     "不明", "なし", "無し", "該当なし",
+     "未知", "无", "没有", "미상", "없음",
+    }
+)
+
 MISSING_TOKENS = frozenset(
     {"", "na", "n/a", "n.a.", "null", "none", "nil", "nan", "-", "--",
      "?", "unknown", "missing", "not available", "not applicable"}
-)
+) | FOREIGN_MISSING_TOKENS
 
 # --- C1 missingness ---------------------------------------------------------
 MISSING_WARN = 0.05
@@ -161,6 +192,10 @@ SENTINEL_TOKENS = frozenset(
      "prefer not to say", "prefer not to answer", "no answer", "declined",
      "not specified", "unspecified", "not stated", "no response", "withheld"}
 )
+# Every word MISSING_TOKENS knows in another language is a sentinel too. The
+# empty string is not: a blank cell is C1's finding, and reporting it here would
+# accuse every column that has a gap in it of using a marker.
+SENTINEL_TOKENS |= FOREIGN_MISSING_TOKENS
 
 # A column where "ERROR" is most of the values is a column about errors. A
 # column where it is a small minority is a missing value wearing a costume.
@@ -192,8 +227,18 @@ DEPENDENCY_MAX_NUMERIC_KEYS = 30
 # or it is a correlation and filling from it would be a guess.
 ARITHMETIC_MIN_SUPPORT = 30
 ARITHMETIC_TOLERANCE = 1e-6
-# The search is cubic in numeric columns, so it is capped rather than clever.
-ARITHMETIC_MAX_COLUMNS = 10
+# The search is cubic in the number of numeric columns. Testing each candidate
+# against a few complete rows first costs three multiplications and rejects
+# almost all of them, which is what makes this cap a real one rather than a
+# refusal: at 10 a sales export with a dozen measures got no arithmetic checked
+# at all.
+ARITHMETIC_MAX_COLUMNS = 40
+# Without a single row where every numeric column is filled there is nothing to
+# probe against, and every candidate has to be tested the slow way.
+ARITHMETIC_MAX_COLUMNS_UNPROBED = 10
+# How many complete rows a candidate has to satisfy before it is worth the full
+# test. One row would pass relations that hold by coincidence at that row.
+ARITHMETIC_PROBE_ROWS = 3
 
 # --- C15 to C18 formatting -----------------------------------------------
 # Below this a column is too short to tell a pattern from a coincidence.
@@ -247,3 +292,52 @@ SUMMARY_TOLERANCE = 0.005
 SUMMARY_WORDS = frozenset(
     {"total", "totals", "sum", "subtotal", "grand total", "all", "overall", "sum:"}
 )
+
+
+# --- C19 entity variants -----------------------------------------------------
+# "Acme Inc", "ACME, Inc." and "Acme Incorporated" are one company and three
+# categories. C5 will not touch them: they differ by more than case and space,
+# so merging them is a judgement about the world rather than about the text.
+# This check finds them and says so, and leaves the decision alone.
+ENTITY_MIN_VALUES = 20
+# A column with hundreds of distinct names is where this matters, but comparing
+# every pair is quadratic. Grouping by a stripped key is linear, so the cap only
+# exists to keep the payload sane.
+ENTITY_MAX_UNIQUE = 2_000
+# Suffixes that name the legal form of a company rather than the company. Only
+# removed from the end of a value, and only when something is left over.
+ENTITY_SUFFIXES = frozenset(
+    {"inc", "incorporated", "llc", "llp", "ltd", "limited", "plc", "corp",
+     "corporation", "co", "company", "gmbh", "ag", "sa", "sas", "srl", "spa",
+     "bv", "nv", "ab", "as", "oy", "pty", "pte", "kk", "kft", "sp z oo", "doo",
+     "the"}
+)
+
+
+# --- C21 markup in text ------------------------------------------------------
+# Scraped text arrives with the page still attached. Below this share of the
+# filled values it is a stray angle bracket rather than a markup problem.
+MARKUP_MIN_SHARE = 0.02
+MARKUP_MIN_COUNT = 3
+
+# --- C22 ordering between columns --------------------------------------------
+# "The ship date is never before the order date." Unlike C12 and C13, the
+# finding here is the exception rather than the rule, so the rule itself has to
+# be established on nearly every row before a handful of violations mean
+# anything. At 1.0 the check can never fire, so it stops just short.
+ORDERING_MIN_SUPPORT = 30
+ORDERING_MIN_SHARE = 0.98
+# And the violations have to be a minority of what is left, or the pair is
+# simply unordered and the direction was picked by a coin flip.
+ORDERING_MAX_VIOLATION_SHARE = 0.05
+# Two numeric columns that measure the same kind of thing occupy the same range,
+# and that is what makes comparing them mean anything. A discount in percent sits
+# below a monthly charge in euros on almost every row of the sample data, and the
+# handful of rows where it does not are not errors - the two were never
+# comparable. Requiring the middle halves of the two columns to overlap throws
+# that pair out and keeps a minimum against its maximum. Dates need no such test:
+# two dates are always the same kind of thing.
+ORDERING_MIN_IQR_OVERLAP = 0.1
+# At most this many ordering findings. Past a handful the list stops being a
+# list of problems and starts being a description of the dataset's shape.
+ORDERING_MAX_FINDINGS = 5

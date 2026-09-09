@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import re
+
 import numpy as np
 import pandas as pd
 from scipy.stats import chi2_contingency
@@ -159,6 +161,142 @@ def _untrimmed(df: pd.DataFrame, profiles: list[dict]) -> list[dict]:
             ),
             row_indices=sorted(rows),
             suggested_action="trim",
+            evidence={"columns": dict(worst[:10])},
+        )
+    ]
+
+
+_PUNCTUATION = re.compile(r"[^\w\s]", re.UNICODE)
+
+
+def _entity_key(value: str) -> str:
+    """A company name reduced to the part that names the company.
+
+    Case, accents and spacing come off in normalise_text. Punctuation goes next,
+    because "Acme, Inc." and "Acme Inc" differ by a comma and a full stop. Then
+    the words naming the legal form, which say what kind of thing the company is
+    and nothing about which one it is.
+    """
+    words = _PUNCTUATION.sub(" ", prof.normalise_text(value)).split()
+    while words and words[-1] in config.ENTITY_SUFFIXES:
+        words.pop()
+    while words and words[0] in config.ENTITY_SUFFIXES:
+        words.pop(0)
+    return " ".join(words)
+
+
+def _entity_variants(df: pd.DataFrame, profiles: list[dict]) -> list[dict]:
+    """One organisation written several ways.
+
+    C5 merges spellings that differ only in case and space, because that
+    difference cannot be carrying meaning. This is the next layer out, where the
+    difference is real text - a comma, an abbreviation, a legal suffix - and the
+    judgement about whether two names are one company belongs to someone who
+    knows the company. So the grouping is reported and never applied unasked:
+    "Smith Ltd" and "Smith Co" reduce to the same key and may well be two firms.
+    """
+    issues = []
+    for p_ in profiles:
+        col = p_["name"]
+        if p_["inferred_type"] in (prof.NUMERIC, prof.DATETIME, prof.CONSTANT, prof.BOOLEAN):
+            continue
+        values = prof.present(df[col])
+        if len(values) < config.ENTITY_MIN_VALUES:
+            continue
+        distinct = values.unique()
+        if len(distinct) > config.ENTITY_MAX_UNIQUE or len(distinct) < 2:
+            continue
+        # Names have letters and usually more than one word. A postcode or a
+        # part number would group just as happily and should not.
+        if not float(pd.Series(distinct).str.contains(r"[^\W\d_]", regex=True).mean()) > 0.9:
+            continue
+        if float(pd.Series(distinct).str.split().str.len().mean()) < 1.5:
+            continue
+
+        groups: dict[str, set] = {}
+        for raw in distinct:
+            key = _entity_key(raw)
+            if len(key) >= 3:
+                groups.setdefault(key, set()).add(raw)
+
+        counts = values.value_counts()
+        canonical, rows = {}, []
+        for key, raws in groups.items():
+            # Only what C5 cannot already see. Spellings differing by case or
+            # space alone are its finding, not this one.
+            if len({prof.normalise_text(r) for r in raws}) < 2:
+                continue
+            best = max(raws, key=lambda r: (counts.get(r, 0), len(str(r))))
+            canonical[best] = sorted(raws)
+            rows.extend(df.index[values.isin(raws - {best}).reindex(df.index, fill_value=False)])
+        if not canonical:
+            continue
+
+        example = sorted(canonical.items(), key=lambda kv: -len(kv[1]))[0]
+        issues.append(
+            make_issue(
+                id=f"entity:{col}",
+                check="C19_entity_variants",
+                scope="column",
+                severity=MEDIUM,
+                title=f"'{col}' names {len(canonical)} things more than one way",
+                detail=(
+                    f"{', '.join(repr(v) for v in example[1][:3])} differ by punctuation or by "
+                    "the words naming a legal form, and every count, join and grouping treats "
+                    f"them as separate. Merging them would fold {len(rows)} rows into "
+                    f"{len(canonical)} names. This one is not applied for you: two names that "
+                    "reduce to the same thing are not always the same thing, and only someone "
+                    "who knows what is in this column can say."
+                ),
+                column=col,
+                row_indices=rows,
+                suggested_action="normalize_values",
+                evidence={
+                    "canonical": {str(k): [str(x) for x in v] for k, v in canonical.items()},
+                    "auto_apply": False,
+                },
+            )
+        )
+    return issues
+
+
+def _invisible_characters(df: pd.DataFrame) -> list[dict]:
+    """Characters with no width that still make two equal strings unequal.
+
+    A zero-width space or a stray byte order mark inside a value is invisible in
+    every viewer and fatal to every join: the cell reads "London" on screen and
+    does not match "London". A non-breaking space is the same problem wearing a
+    space, and is folded to a real one rather than removed, because something
+    meant a space to be there.
+    """
+    affected: dict[str, int] = {}
+    rows: set = set()
+    for col in df.columns:
+        hits = df[col].fillna("").str.contains(formats.INVISIBLE, regex=True)
+        count = int(hits.sum())
+        if count:
+            affected[col] = count
+            rows.update(df.index[hits])
+    if not affected:
+        return []
+
+    worst = sorted(affected.items(), key=lambda kv: -kv[1])
+    named = ", ".join(f"'{c}'" for c, _ in worst[:3])
+    return [
+        make_issue(
+            id="invisible",
+            check="C20_invisible_characters",
+            scope="dataset",
+            severity=MEDIUM,
+            title=f"{sum(affected.values())} cells contain characters you cannot see",
+            detail=(
+                f"Zero-width or non-breaking characters appear in {len(affected)} columns, "
+                f"most of them in {named}. Nothing shows them, and two cells that look "
+                "identical will not match, will not group and will not join while one of "
+                "them has one in it."
+            ),
+            row_indices=sorted(rows),
+            suggested_action="strip_invisible",
             evidence={"columns": dict(worst[:10])},
         )
     ]
@@ -627,11 +765,13 @@ def run(
         *_missingness(df, profiles),
         *_sentinel_values(df, profiles),
         *_untrimmed(df, profiles),
+        *_invisible_characters(df),
         *_sparse_rows(df),
         *_constant(df, profiles),
         *_id_like(profiles, label_column),
         *_mixed_types(df, profiles),
         *_categorical_inconsistency(df, profiles),
+        *_entity_variants(df, profiles),
         *_rare_categories(df, profiles),
         *_outliers(df, profiles),
         *_implausible(df, profiles),

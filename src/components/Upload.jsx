@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
 
+import { readFile } from '../decode.js'
 import { ACCEPTS, SAMPLES, readSample } from '../samples.js'
 
 export default function Upload({ onFile, disabled }) {
@@ -13,7 +14,8 @@ export default function Upload({ onFile, disabled }) {
       setError(`${file.name} is not a CSV or TSV. Sift reads those two formats only.`)
       return
     }
-    onFile(file.name, await file.text())
+    const { text, encoding } = await readFile(file)
+    onFile(file.name, text, { encoding })
   }
 
   const loadSample = async (sample) => {

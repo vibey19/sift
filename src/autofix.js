@@ -24,6 +24,8 @@ import {
   NORMALIZE_BOOLEAN,
   REFORMAT_DATE,
   REFORMAT_NUMBER,
+  STRIP_INVISIBLE,
+  STRIP_MARKUP,
   TRIM,
 } from './edits.js'
 
@@ -32,6 +34,8 @@ import {
 // deduplication has to run after every value has settled or it compares rows
 // that are about to change.
 const ORDER = [
+  STRIP_INVISIBLE,
+  STRIP_MARKUP,
   TRIM,
   BLANK_VALUES,
   REFORMAT_NUMBER,
@@ -84,6 +88,21 @@ const SAFE = {
   ],
 
   C14_untrimmed: () => [{ op: TRIM, label: 'trim the space around every value' }],
+
+  C20_invisible_characters: (issue) => [
+    {
+      op: STRIP_INVISIBLE,
+      label: `clear the invisible characters out of ${issue.total_affected} cells`,
+    },
+  ],
+
+  C21_markup: (issue) => [
+    {
+      op: STRIP_MARKUP,
+      column: issue.column,
+      label: `take the HTML out of ${issue.total_affected} values in '${issue.column}'`,
+    },
+  ],
 
   C11_sentinel_values: (issue) => [
     {

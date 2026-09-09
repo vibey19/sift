@@ -150,3 +150,60 @@ def parse_boolean(value) -> bool | None:
     if text in FALSE_WORDS:
         return False
     return None
+
+
+# --- markup and invisible characters ----------------------------------------
+# The named entities worth decoding, written by code point so that no character
+# here has to survive a copy and paste to stay correct. The check that reports
+# markup and the fix that removes it share this list, so anything missing from
+# it is neither flagged nor quietly deleted.
+ENTITIES = {
+    "amp": "&", "lt": "<", "gt": ">", "quot": '"', "apos": "'", "nbsp": " ",
+    "ndash": chr(0x2013), "mdash": chr(0x2014), "hellip": chr(0x2026),
+    "lsquo": chr(0x2018), "rsquo": chr(0x2019), "ldquo": chr(0x201C),
+    "rdquo": chr(0x201D), "bull": chr(0x2022), "middot": chr(0x00B7),
+    "deg": chr(0x00B0), "copy": chr(0x00A9), "reg": chr(0x00AE),
+    "trade": chr(0x2122), "euro": chr(0x20AC), "pound": chr(0x00A3),
+}
+
+# An opening or closing tag, or an entity from the list above. Deliberately
+# narrow: "a < b" and "3 > 2" are not markup and must not be read as it.
+_TAG = r"</?[a-zA-Z][a-zA-Z0-9]*(?:\s[^<>]*)?/?>"
+_ENTITY = r"&(?:" + "|".join(sorted(ENTITIES)) + r"|#\d{1,5}|#x[0-9a-fA-F]{1,4});"
+MARKUP = re.compile(_TAG + "|" + _ENTITY)
+
+
+def _entity(match: str) -> str:
+    body = match[1:-1]
+    if body.startswith("#"):
+        try:
+            return chr(int(body[2:], 16) if body[1:2] in "xX" else int(body[1:]))
+        except (ValueError, OverflowError):
+            return match
+    return ENTITIES.get(body, match)
+
+
+def strip_markup(value) -> str:
+    """Text with the web page taken off it.
+
+    Tags become a space rather than nothing, so that "one<br>two" does not come
+    back as a single word, and the run of spaces that leaves is collapsed
+    afterwards.
+    """
+    text = str(value if value is not None else "")
+    text = re.sub(_TAG, " ", text)
+    text = re.sub(_ENTITY, lambda m: _entity(m.group(0)), text)
+    return " ".join(text.split())
+
+
+# Characters that take up no width and change nothing about what a value means.
+ZERO_WIDTH = "".join(chr(c) for c in (0x200B, 0x200C, 0x200D, 0x2060, 0xFEFF, 0x200E, 0x200F, 0x00AD))
+# Spaces that are not the space character. Folded to one rather than removed,
+# because a space is what they are and something meant one to be there.
+SPACE_LIKE = "".join(chr(c) for c in (0x00A0, 0x2007, 0x202F, 0x2009, 0x2002, 0x2003))
+INVISIBLE = re.compile("[" + ZERO_WIDTH + SPACE_LIKE + "]")
+
+
+def strip_invisible(value) -> str:
+    text = str(value if value is not None else "")
+    return "".join("" if c in ZERO_WIDTH else " " if c in SPACE_LIKE else c for c in text)

@@ -6,7 +6,14 @@
 // log's length, and why replay is one linear pass over the rows.
 
 import { columnIndex } from './csv.js'
-import { formatNumber, parseBoolean, parseDate, parseNumber } from './formats.js'
+import {
+  formatNumber,
+  parseBoolean,
+  parseDate,
+  parseNumber,
+  stripInvisible,
+  stripMarkup,
+} from './formats.js'
 
 export const DROP_ROWS = 'drop_rows'
 export const DEDUPE = 'dedupe'
@@ -21,6 +28,8 @@ export const TRIM = 'trim'
 export const REFORMAT_NUMBER = 'reformat_number'
 export const REFORMAT_DATE = 'reformat_date'
 export const NORMALIZE_BOOLEAN = 'normalize_boolean'
+export const STRIP_MARKUP = 'strip_markup'
+export const STRIP_INVISIBLE = 'strip_invisible'
 
 function normalise(value) {
   return String(value ?? '').trim().toLowerCase().replace(/\s+/g, ' ')
@@ -173,6 +182,32 @@ export function replay(columns, rows, edits) {
         break
       }
 
+      case STRIP_MARKUP: {
+        const col = index[edit.column]
+        if (col == null) break
+        for (let row = 0; row < rows.length; row += 1) {
+          if (droppedRows.has(row)) continue
+          const value = String(cellAt(row, col) ?? '')
+          const stripped = stripMarkup(value)
+          if (stripped !== value) overrides.set(`${row}:${col}`, stripped)
+        }
+        break
+      }
+
+      case STRIP_INVISIBLE: {
+        // Every column, because a zero-width character is not a property of the
+        // column it landed in. It came from wherever the text was copied from.
+        for (let row = 0; row < rows.length; row += 1) {
+          if (droppedRows.has(row)) continue
+          for (let col = 0; col < columns.length; col += 1) {
+            const value = String(cellAt(row, col) ?? '')
+            const stripped = stripInvisible(value)
+            if (stripped !== value) overrides.set(`${row}:${col}`, stripped)
+          }
+        }
+        break
+      }
+
       case TRIM: {
         for (let row = 0; row < rows.length; row += 1) {
           if (droppedRows.has(row)) continue
@@ -246,6 +281,10 @@ export function describe(edit) {
       return `rewrote the dates in '${edit.column}' as YYYY-MM-DD`
     case NORMALIZE_BOOLEAN:
       return `wrote '${edit.column}' consistently as true and false`
+    case STRIP_MARKUP:
+      return `took the HTML out of '${edit.column}'`
+    case STRIP_INVISIBLE:
+      return 'removed the zero-width characters'
     default:
       return edit.op
   }
