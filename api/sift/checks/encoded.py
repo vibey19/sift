@@ -33,24 +33,74 @@ def _formatted_numbers(df: pd.DataFrame, profiles: list[dict]) -> list[dict]:
         if len(dressed) < config.FORMAT_MIN_VALUES:
             continue
 
+        # What is about to be thrown away. Stripping a unit is the one thing
+        # this fix does that cannot be undone by looking at the result: 45 kg
+        # and 45 lb both become 45, and nothing in the file remembers which.
+        parts = [p for p in values.map(formats.number_parts) if p]
+        units = sorted({p["unit"] for p in parts if p["unit"]})
+        symbols = sorted({p["symbol"] for p in parts if p["symbol"]})
+        # A percent sign is a unit that also implies a convention, and the two
+        # conventions differ by a factor of a hundred.
+        percent = "%" in units
+        mixed = len(units) > 1 or len(symbols) > 1
+
         examples = list(dressed.value_counts().index[:4])
+        detail = (
+            f"{len(dressed)} of the {len(values)} filled values in '{col}' are numbers "
+            f"carrying a symbol, a separator or a unit, like {', '.join(repr(e) for e in examples[:3])}. "
+            "Written that way the column loads as text, so nothing can be summed, "
+            "averaged or compared until the formatting comes off."
+        )
+        if mixed:
+            found = ", ".join(repr(u) for u in (units + symbols)[:4])
+            detail += (
+                f" This column does not use one, it uses {len(units) + len(symbols)}: "
+                f"{found}. Taking them off would make every value the same kind of number "
+                "when they are not, and nothing left in the file would say which was which. "
+                "So this is left for you: split the column, or convert to one unit, and "
+                "then the formatting can come off safely."
+            )
+        else:
+            worn = (symbols + units)[0] if (symbols or units) else ""
+            if worn and not percent:
+                detail += (
+                    f" Every value carries the same {'symbol' if worn in symbols else 'unit'}, "
+                    f"{worn!r}, so removing it loses nothing the column did not already say "
+                    "once. It is worth putting into the column name."
+                )
+            if percent:
+                detail += (
+                    " Note which convention this leaves you in: '45%' becomes 45, not 0.45. "
+                    "That is the reading most spreadsheets use and the opposite of the one "
+                    "most statistical code expects, so divide by a hundred if you need the "
+                    "other."
+                )
+
         issues.append(
             make_issue(
                 id=f"format_number:{col}",
                 check="C15_formatted_numbers",
                 scope="column",
                 severity=MEDIUM,
-                title=f"'{col}' holds numbers that will not parse as numbers",
-                detail=(
-                    f"{len(dressed)} of the {len(values)} filled values in '{col}' are numbers "
-                    f"carrying a symbol, a separator or a unit, like {', '.join(repr(e) for e in examples[:3])}. "
-                    "Written that way the column loads as text, so nothing can be summed, "
-                    "averaged or compared until the formatting comes off."
+                title=(
+                    f"'{col}' mixes {len(symbols)} currencies"
+                    if mixed and len(symbols) > 1
+                    else f"'{col}' mixes {len(units)} different units"
+                    if mixed
+                    else f"'{col}' holds numbers that will not parse as numbers"
                 ),
+                detail=detail,
                 column=col,
                 row_indices=dressed.index,
                 suggested_action="reformat_number",
-                evidence={"examples": [str(e) for e in examples], "parse_share": share},
+                evidence={
+                    "examples": [str(e) for e in examples],
+                    "parse_share": share,
+                    "units": units,
+                    "symbols": symbols,
+                    "percent": percent,
+                    "auto_apply": not mixed,
+                },
             )
         )
     return issues

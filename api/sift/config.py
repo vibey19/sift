@@ -229,6 +229,14 @@ DEPENDENCY_MAX_NUMERIC_KEYS = 30
 # or it is a correlation and filling from it would be a guess.
 ARITHMETIC_MIN_SUPPORT = 30
 ARITHMETIC_TOLERANCE = 1e-6
+# Rows are the wrong thing to count. Two columns drawn from {1, 2} produce four
+# distinct facts however many rows they fill, and "c = a * b" holding across all
+# four is a coincidence with a one in several chance of happening. Forty rows of
+# that cleared the support threshold and the fill ran unasked. What has to be
+# counted is how many different ways the relation was tested, so a relation
+# witnessed by fewer than this many distinct input pairs is still reported and
+# still explained, and is left for the user rather than applied.
+ARITHMETIC_MIN_DISTINCT = 12
 # The search is cubic in the number of numeric columns. Testing each candidate
 # against a few complete rows first costs three multiplications and rejects
 # almost all of them, which is what makes this cap a real one rather than a

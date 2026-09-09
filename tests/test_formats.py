@@ -116,16 +116,21 @@ def test_the_python_and_javascript_parsers_agree():
         "numbers": [text for text, _ in NUMBERS],
         "dates": [[text, first] for text, first, _ in DATES],
         "booleans": [text for text, _ in BOOLEANS],
+        "bare": [text for text, _ in NUMBERS] + [
+            "9007199254740993", "1234567890123456789", "007", "0012.50",
+            "$9,007,199,254,740,993", "2.500,50",
+        ],
         "markup": [text for text, _ in MARKUP],
         "invisible": [text for text, _ in INVISIBLE],
     }
     script = """
-import { parseNumber, parseDate, parseBoolean, stripMarkup, stripInvisible } from './src/formats.js'
+import { parseNumber, parseDate, parseBoolean, stripMarkup, stripInvisible, stripNumberFormatting } from './src/formats.js'
 const cases = JSON.parse(process.env.SIFT_CASES)
 console.log(JSON.stringify({
   numbers: cases.numbers.map((v) => parseNumber(v)),
   dates: cases.dates.map(([v, f]) => parseDate(v, f)),
   booleans: cases.booleans.map((v) => parseBoolean(v)),
+  bare: cases.bare.map(stripNumberFormatting),
   markup: cases.markup.map(stripMarkup),
   invisible: cases.invisible.map(stripInvisible),
 }))
@@ -143,6 +148,9 @@ console.log(JSON.stringify({
     assert js["numbers"] == [expected for _, expected in NUMBERS]
     assert js["dates"] == [expected for _, _, expected in DATES]
     assert js["booleans"] == [expected for _, expected in BOOLEANS]
+    # The textual stripping has to agree too, digit for digit. The server
+    # decides a column is numeric; the browser is what writes the file.
+    assert js["bare"] == [formats.strip_number_formatting(v) for v in cases["bare"]]
     assert js["markup"] == [expected for _, expected in MARKUP]
     assert js["invisible"] == [expected for _, expected in INVISIBLE]
 

@@ -51,13 +51,21 @@ const ORDER = [
 ]
 
 const SAFE = {
-  C15_formatted_numbers: (issue) => [
-    {
-      op: REFORMAT_NUMBER,
-      column: issue.column,
-      label: `read '${issue.column}' as numbers by taking the formatting off`,
-    },
-  ],
+  C15_formatted_numbers: (issue) => {
+    const worn = [...(issue.evidence?.symbols ?? []), ...(issue.evidence?.units ?? [])]
+    return [
+      {
+        op: REFORMAT_NUMBER,
+        column: issue.column,
+        label:
+          `read '${issue.column}' as numbers by taking the formatting off` +
+          // Named, because it is the part of the change that is not visible in
+          // the result: 45 kg and 45 both look like 45 afterwards.
+          (worn.length ? `, including the ${worn.map((w) => `'${w}'`).join(' and ')}` : '') +
+          (issue.evidence?.percent ? " (so '45%' becomes 45, not 0.45)" : ''),
+      },
+    ]
+  },
 
   C16_mixed_date_formats: (issue) => [
     {

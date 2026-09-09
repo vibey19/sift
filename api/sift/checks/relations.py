@@ -185,6 +185,14 @@ def _arithmetic_relations(df: pd.DataFrame, profiles: list[dict]) -> list[dict]:
                     # arithmetically sound and practically useless.
                     if values[target][complete].nunique() < 2:
                         continue
+                    # How many different ways the relation was actually tested,
+                    # which is not the same as how many rows tested it.
+                    witnesses = int(
+                        pd.MultiIndex.from_arrays(
+                            [values[a][complete], values[b][complete]]
+                        ).nunique()
+                    )
+                    proven = witnesses >= config.ARITHMETIC_MIN_DISTINCT
 
                     label = template.format(c=target, a=a, b=b)
                     # An equation with three terms can be solved for any one of
@@ -215,6 +223,16 @@ def _arithmetic_relations(df: pd.DataFrame, profiles: list[dict]) -> list[dict]:
                                     f"filled in, with no exceptions. Rearranged, that recovers "
                                     f"{int(fillable.sum())} missing '{column}' values by "
                                     "arithmetic rather than by guessing at them."
+                                    + (
+                                        ""
+                                        if proven
+                                        else f" Those {support} rows only test the rule "
+                                        f"{witnesses} different ways, though, because the "
+                                        "inputs take so few distinct values between them. A "
+                                        "rule confirmed that few times can hold by accident, "
+                                        "so this one is left for you: apply it if the formula "
+                                        "is one you recognise."
+                                    )
                                 ),
                                 column=column,
                                 row_indices=df.index[fillable],
@@ -224,7 +242,9 @@ def _arithmetic_relations(df: pd.DataFrame, profiles: list[dict]) -> list[dict]:
                                     "left": left,
                                     "right": right,
                                     "support": support,
+                                    "distinct_inputs": witnesses,
                                     "formula": label,
+                                    "auto_apply": proven,
                                 },
                             )
                         )

@@ -7,12 +7,11 @@
 
 import { columnIndex } from './csv.js'
 import {
-  formatNumber,
   parseBoolean,
   parseDate,
-  parseNumber,
   stripInvisible,
   stripMarkup,
+  stripNumberFormatting,
 } from './formats.js'
 
 export const DROP_ROWS = 'drop_rows'
@@ -173,10 +172,14 @@ export function replay(columns, rows, edits) {
         for (let row = 0; row < rows.length; row += 1) {
           if (droppedRows.has(row)) continue
           const raw = cellAt(row, col)
-          const number = parseNumber(raw)
+          // Textual, so that no digit is lost on the way through. Reading the
+          // value into a Number and printing it back out turns an account
+          // number of 9007199254740993 into ...992 and an 007 into 7, neither
+          // of which any user would ever think to check for.
+          const bare = stripNumberFormatting(raw)
           // Anything that is not a number is left exactly as it was, rather
           // than being blanked for failing to be one.
-          if (number !== null) setCell(row, col, formatNumber(number))
+          if (bare !== null) setCell(row, col, bare)
         }
         break
       }

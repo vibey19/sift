@@ -33,8 +33,20 @@ TRUE_WORDS = frozenset({"true", "t", "yes", "y", "1", "on"})
 FALSE_WORDS = frozenset({"false", "f", "no", "n", "0", "off"})
 
 
-def parse_number(value) -> float | None:
-    """A number, however it was written down. None if it is not one."""
+def number_parts(value) -> dict | None:
+    """The number inside a formatted value, and the decoration around it.
+
+    Returns the number as the text it was written as, never as a float. That
+    distinction is the whole point of this function. A float cannot hold
+    9007199254740993 - it comes back as ...992 - and it cannot hold 007 either,
+    because the zeros are not a quantity. Both are ordinary in an id column, and
+    both used to be destroyed on export by a reformat that read the value into a
+    number and printed it out again. Undressing a number is a string operation
+    and is done as one.
+
+    `unit` and `symbol` are what was taken off, so a check can say so rather
+    than quietly dropping the kilograms.
+    """
     text = str(value).strip()
     if not text:
         return None
@@ -44,24 +56,60 @@ def parse_number(value) -> float | None:
     if negative:
         text = text[1:-1].strip()
 
+    symbols = re.findall(f"[{re.escape(CURRENCY)}]", text)
     text = re.sub(f"[{re.escape(CURRENCY)}]", "", text).strip()
     # Thousands separators only in the strict grouping. "1.234,50" is European
     # for 1234.50 and is refused rather than read as 1.2345.
-    if re.match(r"^-?\d{1,3}(,\d{3})+(\.\d+)?\s*", text):
+    grouped = bool(re.match(r"^-?\d{1,3}(,\d{3})+(\.\d+)?\s*", text))
+    if grouped:
         text = re.sub(r"(?<=\d),(?=\d{3})", "", text)
     text = text.replace(" ", "") if re.fullmatch(r"-?[\d\s]*\.?\d+", text) else text
 
     if text.startswith("-") and text[1:2] == " ":
         text = "-" + text[1:].strip()
 
-    match = _NUMBER.match(text.strip())
+    text = text.strip()
+    match = _NUMBER.match(text)
     if not match:
         return None
+    literal = match.group(1)
+    unit = text[len(literal):].strip()
+    if negative:
+        literal = literal[1:] if literal.startswith("-") else "-" + literal
+    return {
+        "literal": literal,
+        "symbol": symbols[0] if symbols else "",
+        "unit": unit,
+        "negative": negative,
+        "grouped": grouped,
+    }
+
+
+def strip_number_formatting(value) -> str | None:
+    """The number as text, with the decoration removed and nothing else changed.
+
+    None when the value is not a number. Every digit that was written is still
+    there afterwards, including leading zeros and every digit of an integer too
+    long for a float.
+    """
+    parts = number_parts(value)
+    return None if parts is None else parts["literal"]
+
+
+def parse_number(value) -> float | None:
+    """A number, however it was written down. None if it is not one.
+
+    Lossy by nature, and used only where a float is what is wanted: deciding
+    whether a column is numeric, comparing values, arithmetic. Anything that
+    writes a value back into the file uses strip_number_formatting instead.
+    """
+    literal = strip_number_formatting(value)
+    if literal is None:
+        return None
     try:
-        number = float(match.group(1))
+        return float(literal)
     except ValueError:
         return None
-    return -number if negative else number
 
 
 def needs_reformatting(value) -> bool:
