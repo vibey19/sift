@@ -13,8 +13,10 @@ const CATCHES = [
     title: 'The tedious half',
     body:
       'Exact duplicates, four spellings of the same category, columns that never ' +
-      'vary, rows that are more than half empty. None of it needs a decision from ' +
-      'you, so Sift offers to fix all of it at once and shows you exactly what it did.',
+      'vary, rows that are more than half empty, money that will not parse as a ' +
+      'number, three date formats in one column, and gaps that another column ' +
+      'already answers. None of it needs a decision from you, so Sift offers to ' +
+      'fix all of it at once and shows you exactly what it did.',
   },
   {
     tag: 'Your call',
@@ -95,7 +97,7 @@ export default function Landing({ onOpen }) {
           <p className="eyebrow">CSV cleaning, without the notebook</p>
           <h1>Stop rewriting the same cleaning script for every dataset.</h1>
           <p className="lede">
-            Drop in a CSV. Sift runs fifteen checks, tells you what is wrong in plain English,
+            Drop in a CSV. Sift runs twenty-nine checks, tells you what is wrong in plain English,
             and fixes the safe ones in one click. The rest it hands to you with the row numbers
             and a reason. Nothing is stored: your file is audited by a stateless function and
             forgotten the moment the response is sent.
@@ -111,7 +113,7 @@ export default function Landing({ onOpen }) {
 
       <div className="strip">
         <div className="strip-inner">
-          <span>15 checks</span>
+          <span>29 checks</span>
           <span>one-click fixes</span>
           <span>no sign-up</span>
           <span>nothing stored</span>
@@ -143,7 +145,7 @@ export default function Landing({ onOpen }) {
       <section className="section" id="catches">
         <div className="wrap" data-reveal>
           <p className="eyebrow">What it catches</p>
-          <h2>Fifteen checks. It fixes some and asks about the rest.</h2>
+          <h2>Twenty-nine checks. It fixes some and asks about the rest.</h2>
           <div className="grid-2" style={{ marginTop: 34 }}>
             {CATCHES.map((item) => (
               <article className="card" key={item.title}>

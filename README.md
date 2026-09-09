@@ -1,6 +1,6 @@
 # Sift
 
-Sift cleans a messy CSV without the notebook. Drop a file in and it runs fifteen checks, fixes the unambiguous problems in one click, and hands you the rest with the row numbers and a reason.
+Sift cleans a messy CSV without the notebook. Drop a file in and it runs twenty-nine checks, fixes the unambiguous problems in one click, and hands you the rest with the row numbers and a reason.
 
 Live: `<url>` · Sample datasets load from the empty state, so you can try it without uploading anything.
 
@@ -16,11 +16,15 @@ The split the tool draws is between fixes that need a decision and fixes that do
 
 ## What it checks
 
-Fifteen checks, grouped by what they look at.
+Twenty-nine checks, grouped by what they look at.
 
-At the dataset level it finds exact duplicate rows, near-duplicate rows, class imbalance, and rows that appear on both sides of a train/test split. At the column level: missing values, constant and near-constant columns, ID-like columns sitting in the feature set, mixed types in one column, categorical values that differ only by case or whitespace, rare categories, numeric outliers, implausible values, redundant column pairs, and single-column label leakage. At the row level, one check: labels the model disagrees with.
+At the dataset level it finds exact duplicate rows, near-duplicate rows, class imbalance, rows that appear on both sides of a train/test split, and a totals row sitting at the bottom pretending to be a record. At the column level: missing values, constant and near-constant columns, ID-like columns sitting in the feature set, mixed types in one column, categorical values that differ only by case or whitespace, rare categories, numeric outliers, implausible values, redundant column pairs, and single-column label leakage.
 
-Each finding comes back with a severity, a sentence explaining what it means and why it matters, and the row numbers it applies to. Twelve of the fifteen run without a label column. The other three say so rather than quietly returning less.
+Then the formatting half, which is most of what a hand-written cleaning script spends its lines on: words standing in for a missing value, numbers wearing a currency symbol or a unit, one column written in three date formats, true and false spelled six ways, a number like -999 used to mean "no reading", one company named four different ways, characters with no width sitting inside a value, and HTML left attached to scraped text. Two more read relationships between columns rather than values inside one: a column determined by another, and a column that is the sum or product of two others. Both can fill a gap by deduction rather than by guessing. One reports rows that break an order the rest of the file keeps, like a ship date before its order date.
+
+At the row level, one check: labels the model disagrees with.
+
+Each finding comes back with a severity, a sentence explaining what it means and why it matters, and the row numbers it applies to. Twenty-six of the twenty-nine run without a label column. The other three say so rather than quietly returning less.
 
 ## How the interesting three work
 

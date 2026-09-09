@@ -160,6 +160,22 @@ body {
 
 .wordmark { font-family: var(--display); font-size: 17px; letter-spacing: 0.02em; }
 
+.app-header-right {
+  margin-left: auto;
+  display: flex;
+  gap: 16px;
+  align-items: baseline;
+  min-width: 0;
+}
+/* A long filename shortens itself rather than pushing the controls off the row. */
+.app-header-file {
+  text-transform: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 40ch;
+}
+
 .app-main { flex: 1; padding: 20px; max-width: 1400px; width: 100%; margin: 0 auto; }
 
 .panel { background: var(--app-panel); border: 1px solid var(--app-border); }
@@ -258,6 +274,12 @@ a:focus-visible {
 /* ---------- issues ---------- */
 
 .columns { display: grid; grid-template-columns: minmax(340px, 420px) 1fr; gap: 16px; align-items: start; }
+/* A grid item defaults to min-width:auto, which means it refuses to be narrower
+   than its content. The row table is as wide as the dataset, so without this the
+   table pushes its own track open instead of scrolling inside it, and the whole
+   page scrolls sideways: 1,605px of it on a 390px screen, and the same fault on
+   a desktop given a wide enough file. */
+.columns > * { min-width: 0; }
 
 .issue-list { border: 1px solid var(--app-border); background: var(--app-panel); }
 
@@ -326,9 +348,17 @@ p.empty-detail { color: var(--app-text-soft); padding: 40px 20px; text-align: ce
 
 /* ---------- row table ---------- */
 
-.table-scroll { overflow-x: auto; border: 1px solid var(--app-border); background: var(--app-panel); }
+.table-scroll {
+  overflow-x: auto;
+  border: 1px solid var(--app-border);
+  background: var(--app-panel);
+  /* Belt and braces: the box scrolls even where it is not a grid child. */
+  max-width: 100%;
+}
 
-table.rows { border-collapse: collapse; font-size: 12px; width: 100%; }
+/* Auto rather than 100%, so a wide table keeps its columns legible and scrolls,
+   instead of squeezing thirty columns into the width of a phone. */
+table.rows { border-collapse: collapse; font-size: 12px; width: auto; min-width: 100%; }
 table.rows th,
 table.rows td {
   border-bottom: 1px solid var(--app-border);
@@ -701,4 +731,32 @@ p.autofix-note {
 @media (max-width: 620px) {
   .autofix { flex-direction: column; }
   .autofix button { margin-left: 0; }
+}
+
+/* ---------- the auditor on a narrow screen ---------- */
+/*
+ * The header put a wordmark, a tagline, a filename, a link and a toggle in one
+ * row. At 390px that row is 118 pixels tall, because "back to the site" breaks
+ * into four lines of one word each and the tagline into three. Everything here
+ * is about letting each of those be one line or not be there at all.
+ */
+@media (max-width: 620px) {
+  .app-header {
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+  }
+  /* The tagline is decoration next to a filename that is not. */
+  .app-header-tag { display: none; }
+  .app-header-right { gap: 12px; align-items: center; }
+  .app-header-file { max-width: 22ch; }
+  .link-back { white-space: nowrap; }
+  .wide-only { display: none; }
+
+  .app-main { padding: 16px 14px; }
+  /* Four buttons in a row become four buttons in a column, full width, rather
+     than four fragments of buttons. */
+  .actions { flex-wrap: wrap; }
+  .actions button { flex: 1 1 100%; }
 }

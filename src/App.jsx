@@ -89,8 +89,8 @@ export default function App({ handoff, onLeave }) {
       }
       setMapping(chosen)
       // Straight into the audit. A label picker in front of the results is a
-      // form standing between someone and the thing they came for, and twelve
-      // of the fifteen checks do not need one.
+      // form standing between someone and the thing they came for, and all but three
+      // of the twenty-nine checks do not need one.
       await run(text, chosen)
     } catch (err) {
       setError(messageFor(err))
@@ -180,17 +180,21 @@ export default function App({ handoff, onLeave }) {
     <div className="app">
       <header className="app-header">
         <span className="wordmark">SIFT</span>
-        <span className="label">dataset quality auditor</span>
-        <span style={{ marginLeft: 'auto', display: 'flex', gap: 16, alignItems: 'baseline' }}>
+        <span className="label app-header-tag">dataset quality auditor</span>
+        {/* A class rather than an inline style, because an inline gap cannot be
+            overridden by a media query and this row has to reflow on a phone. */}
+        <span className="app-header-right">
           {dataset && (
-            <span className="label mono" style={{ textTransform: 'none' }}>
+            <span className="label mono app-header-file">
               {dataset.name}
               {/* Said out loud only when it was not the obvious answer, because
                   a file that had to be guessed at is worth knowing about. */}
               {dataset.encoding && dataset.encoding !== 'utf-8' && ` · read as ${dataset.encoding}`}
             </span>
           )}
-          <button className="link-back" onClick={onLeave}>← back to the site</button>
+          <button className="link-back" onClick={onLeave}>
+            ← back<span className="wide-only"> to the site</span>
+          </button>
           <ThemeToggle />
         </span>
       </header>

@@ -39,7 +39,7 @@ export default function ColumnMap({ profile, label, split, onChange, onRun, onRe
       </div>
       {!label && (
         <p className="label" style={{ marginTop: 14, marginBottom: 0 }}>
-          Twelve of the fifteen checks have already run. Naming a label column adds the
+          Twenty-six of the twenty-nine checks have already run. Naming a label column adds the
           other three: mislabelled rows, leaked columns and train/test contamination.
         </p>
       )}
