@@ -14,7 +14,7 @@ import unicodedata
 import numpy as np
 import pandas as pd
 
-from . import config
+from . import config, formats
 
 CONSTANT = "constant"
 ID_LIKE = "id_like"
@@ -139,11 +139,19 @@ def infer_type(s: pd.Series, n_rows: int) -> str:
     # An integer column of distinct values is an identifier. A continuous
     # measurement is also mostly distinct but is a genuine feature, so the
     # fractional part is what separates them.
-    looks_continuous = (
-        numeric_share > config.NUMERIC_PARSE_FRACTION
-        and not numeric.empty
-        and float((numeric % 1 != 0).mean()) > 0.05
-    )
+    def _continuous(series: pd.Series) -> bool:
+        return not series.empty and float((series % 1 != 0).mean()) > 0.05
+
+    looks_continuous = numeric_share > config.NUMERIC_PARSE_FRACTION and _continuous(numeric)
+    if not looks_continuous and len(values):
+        # A column of money is every value distinct and none of them parsing,
+        # which is exactly what an identifier looks like from here. What tells
+        # them apart is the formatting itself: an identifier does not carry a
+        # currency symbol, a percent sign or a unit. Continuity is no help,
+        # because round amounts have no fractional part to vary.
+        dressed = values.map(formats.needs_reformatting)
+        if float(dressed.mean()) > config.NUMERIC_PARSE_FRACTION:
+            looks_continuous = True
     # Uniqueness is measured over the values that are actually there. A column
     # that is 40% blank but distinct wherever it is filled is still an id, and
     # dividing by the row count would hide that.

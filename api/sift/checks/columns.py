@@ -182,6 +182,22 @@ def _constant(df: pd.DataFrame, profiles: list[dict]) -> list[dict]:
         col = p["name"]
         values = prof.present(df[col])
         if values.empty:
+            # A column with nothing in it at all. Reported here rather than
+            # skipped, because an empty column is the clearest case of the thing
+            # this check exists to find.
+            issues.append(
+                make_issue(
+                    id=f"constant:{col}", check="C2_constant", scope="column",
+                    severity=LOW,
+                    title=f"'{col}' is empty",
+                    detail=(
+                        f"Not one of the {len(df)} rows has a value for '{col}'. An empty "
+                        "column carries nothing and only makes the file wider."
+                    ),
+                    column=col, total_affected=len(df), suggested_action="drop_column",
+                    evidence={"top_value_share": 1.0, "empty": True},
+                )
+            )
             continue
         top_share = float(values.value_counts(normalize=True).iloc[0])
         if p["inferred_type"] == prof.CONSTANT:

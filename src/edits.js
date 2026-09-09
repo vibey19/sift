@@ -6,6 +6,7 @@
 // log's length, and why replay is one linear pass over the rows.
 
 import { columnIndex } from './csv.js'
+import { formatNumber, parseBoolean, parseDate, parseNumber } from './formats.js'
 
 export const DROP_ROWS = 'drop_rows'
 export const DEDUPE = 'dedupe'
@@ -17,6 +18,9 @@ export const FILL_MISSING = 'fill_missing'
 export const FILL_FROM_COLUMN = 'fill_from_column'
 export const FILL_FROM_FORMULA = 'fill_from_formula'
 export const TRIM = 'trim'
+export const REFORMAT_NUMBER = 'reformat_number'
+export const REFORMAT_DATE = 'reformat_date'
+export const NORMALIZE_BOOLEAN = 'normalize_boolean'
 
 function normalise(value) {
   return String(value ?? '').trim().toLowerCase().replace(/\s+/g, ' ')
@@ -133,6 +137,42 @@ export function replay(columns, rows, edits) {
         break
       }
 
+      case REFORMAT_NUMBER: {
+        const col = index[edit.column]
+        if (col == null) break
+        for (let row = 0; row < rows.length; row += 1) {
+          if (droppedRows.has(row)) continue
+          const raw = cellAt(row, col)
+          const number = parseNumber(raw)
+          // Anything that is not a number is left exactly as it was, rather
+          // than being blanked for failing to be one.
+          if (number !== null) overrides.set(`${row}:${col}`, formatNumber(number))
+        }
+        break
+      }
+
+      case REFORMAT_DATE: {
+        const col = index[edit.column]
+        if (col == null) break
+        for (let row = 0; row < rows.length; row += 1) {
+          if (droppedRows.has(row)) continue
+          const value = parseDate(cellAt(row, col), edit.dayfirst)
+          if (value !== null) overrides.set(`${row}:${col}`, value)
+        }
+        break
+      }
+
+      case NORMALIZE_BOOLEAN: {
+        const col = index[edit.column]
+        if (col == null) break
+        for (let row = 0; row < rows.length; row += 1) {
+          if (droppedRows.has(row)) continue
+          const value = parseBoolean(cellAt(row, col))
+          if (value !== null) overrides.set(`${row}:${col}`, value ? 'true' : 'false')
+        }
+        break
+      }
+
       case TRIM: {
         for (let row = 0; row < rows.length; row += 1) {
           if (droppedRows.has(row)) continue
@@ -200,6 +240,12 @@ export function describe(edit) {
       return `computed the missing '${edit.column}' from '${edit.left}' and '${edit.right}'`
     case TRIM:
       return 'trimmed surrounding whitespace'
+    case REFORMAT_NUMBER:
+      return `read '${edit.column}' as numbers`
+    case REFORMAT_DATE:
+      return `rewrote the dates in '${edit.column}' as YYYY-MM-DD`
+    case NORMALIZE_BOOLEAN:
+      return `wrote '${edit.column}' consistently as true and false`
     default:
       return edit.op
   }

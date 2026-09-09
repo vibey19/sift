@@ -156,7 +156,10 @@ SENTINEL_TOKENS = frozenset(
     {"error", "err", "unknown", "n/a", "na", "n.a.", "null", "none", "nil", "nan",
      "missing", "not available", "not applicable", "not recorded", "undefined",
      "invalid", "tbd", "?", "-", "--", "#n/a", "#value!", "#ref!", "#div/0!",
-     "#name?", "#null!", "#num!"}
+     "#name?", "#null!", "#num!",
+     # Politeness in a survey is still an absence of an answer.
+     "prefer not to say", "prefer not to answer", "no answer", "declined",
+     "not specified", "unspecified", "not stated", "no response", "withheld"}
 )
 
 # A column where "ERROR" is most of the values is a column about errors. A
@@ -191,3 +194,20 @@ ARITHMETIC_MIN_SUPPORT = 30
 ARITHMETIC_TOLERANCE = 1e-6
 # The search is cubic in numeric columns, so it is capped rather than clever.
 ARITHMETIC_MAX_COLUMNS = 10
+
+# --- C15 to C18 formatting -----------------------------------------------
+# Below this a column is too short to tell a pattern from a coincidence.
+FORMAT_MIN_VALUES = 8
+# Nearly every filled value has to fit the reading, or it is not that kind of
+# column and rewriting it would destroy whatever it actually is.
+FORMAT_MIN_SHARE = 0.95
+BOOLEAN_MIN_SHARE = 0.98
+
+# --- C18 out-of-band codes ---------------------------------------------------
+OUT_OF_BAND_MIN_VALUES = 30
+OUT_OF_BAND_MIN_COUNT = 5
+# A placeholder is a minority. Past this it is the data.
+OUT_OF_BAND_MAX_SHARE = 0.25
+# How far from the middle, in median absolute deviations, before a repeated
+# exact value stops being a reading and starts being a code.
+OUT_OF_BAND_MIN_DISTANCE = 12.0

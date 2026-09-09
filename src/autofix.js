@@ -21,6 +21,9 @@ import {
   FILL_FROM_FORMULA,
   FILL_MISSING,
   NORMALIZE,
+  NORMALIZE_BOOLEAN,
+  REFORMAT_DATE,
+  REFORMAT_NUMBER,
   TRIM,
 } from './edits.js'
 
@@ -31,6 +34,9 @@ import {
 const ORDER = [
   TRIM,
   BLANK_VALUES,
+  REFORMAT_NUMBER,
+  REFORMAT_DATE,
+  NORMALIZE_BOOLEAN,
   NORMALIZE,
   FILL_FROM_COLUMN,
   FILL_FROM_FORMULA,
@@ -41,6 +47,42 @@ const ORDER = [
 ]
 
 const SAFE = {
+  C15_formatted_numbers: (issue) => [
+    {
+      op: REFORMAT_NUMBER,
+      column: issue.column,
+      label: `read '${issue.column}' as numbers by taking the formatting off`,
+    },
+  ],
+
+  C16_mixed_date_formats: (issue) => [
+    {
+      op: REFORMAT_DATE,
+      column: issue.column,
+      dayfirst: Boolean(issue.evidence?.dayfirst),
+      label: `rewrite '${issue.column}' as YYYY-MM-DD`,
+    },
+  ],
+
+  C17_inconsistent_booleans: (issue) => [
+    {
+      op: NORMALIZE_BOOLEAN,
+      column: issue.column,
+      label:
+        `write the ${issue.evidence?.distinct ?? ''} spellings in '${issue.column}' ` +
+        'consistently as true and false',
+    },
+  ],
+
+  C18_out_of_band_code: (issue) => [
+    {
+      op: BLANK_VALUES,
+      column: issue.column,
+      forms: issue.evidence?.forms ?? [],
+      label: `blank the ${issue.total_affected} rows where '${issue.column}' is ${issue.evidence?.code}`,
+    },
+  ],
+
   C14_untrimmed: () => [{ op: TRIM, label: 'trim the space around every value' }],
 
   C11_sentinel_values: (issue) => [

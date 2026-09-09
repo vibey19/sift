@@ -8,7 +8,9 @@ import numpy as np
 import pandas as pd
 
 from . import config, encode, profile as prof
+# Aliased: `encoded` is already the name of the feature matrix below.
 from .checks import columns, dataset, relations, rows
+from .checks import encoded as format_checks
 from .issue import sort_issues
 
 
@@ -76,6 +78,11 @@ def audit(
         lambda: dataset.run(df, profiles, label_column, split_column),
         lambda why: ([], [{"check": "dataset checks", "reason": f"failed to run - {why}"}]),
     )
+    format_issues, format_skipped = _attempt(
+        "formats",
+        lambda: format_checks.run(df, profiles),
+        lambda why: ([], [{"check": "format checks", "reason": f"failed to run - {why}"}]),
+    )
     relation_issues, relation_skipped = _attempt(
         "relations",
         lambda: relations.run(df, profiles),
@@ -96,8 +103,8 @@ def audit(
         },
     )
 
-    issues = [*dataset_issues, *column_issues, *relation_issues, *mislabels["issues"]]
-    skipped = [*dataset_skipped, *column_skipped, *relation_skipped, *mislabels["skipped"]]
+    issues = [*dataset_issues, *column_issues, *format_issues, *relation_issues, *mislabels["issues"]]
+    skipped = [*dataset_skipped, *column_skipped, *format_skipped, *relation_skipped, *mislabels["skipped"]]
 
     if checks:
         wanted = set(checks)
