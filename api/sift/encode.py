@@ -122,38 +122,3 @@ def l2_normalise(X: np.ndarray) -> np.ndarray:
     norms = np.linalg.norm(X, axis=1, keepdims=True)
     norms[norms == 0] = 1.0
     return X / norms
-
-
-def similar_pairs(
-    X: np.ndarray,
-    threshold: float,
-    left_mask: np.ndarray | None = None,
-    right_mask: np.ndarray | None = None,
-) -> list[tuple[int, int, float]]:
-    """Cosine similarity above `threshold`, computed in row blocks.
-
-    The full matrix is n^2 and does not fit in a serverless function past a few
-    thousand rows, so it is never materialised. When both masks are given only
-    cross-group pairs are returned, which is how D4 asks for train against test.
-    """
-    V = l2_normalise(X)
-    n = len(V)
-    cross = left_mask is not None and right_mask is not None
-    pairs: list[tuple[int, int, float]] = []
-
-    for start in range(0, n, config.NEAR_DUP_CHUNK):
-        stop = min(start + config.NEAR_DUP_CHUNK, n)
-        if cross and not left_mask[start:stop].any():
-            continue
-        sims = V[start:stop] @ V.T
-
-        rows, cols = np.where(sims >= threshold)
-        keep = rows + start != cols
-        if cross:
-            keep &= left_mask[rows + start] & right_mask[cols]
-        else:
-            # Upper triangle only, or every pair arrives twice.
-            keep &= rows + start < cols
-        for r, c in zip(rows[keep], cols[keep]):
-            pairs.append((int(r + start), int(c), float(sims[r, c])))
-    return pairs

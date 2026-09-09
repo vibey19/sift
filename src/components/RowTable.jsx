@@ -54,7 +54,7 @@ export default function RowTable({ columns, rows, indices, highlight, dropped, d
             previous
           </button>
           <span className="label">
-            {page * PAGE + 1}–{Math.min((page + 1) * PAGE, indices.length)} of{' '}
+            {page * PAGE + 1} to {Math.min((page + 1) * PAGE, indices.length)} of{' '}
             {indices.length.toLocaleString()}
           </span>
           <button onClick={() => setPage((p) => Math.min(pages - 1, p + 1))} disabled={page >= pages - 1}>

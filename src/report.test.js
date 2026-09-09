@@ -65,7 +65,7 @@ test('warns rather than reassures when the model is weak', () => {
 test('says which checks did not run and why', () => {
   const md = report([], noLabel, { label: null, split: null })
   assert.match(md, /Checks that did not run/)
-  assert.match(md, /`R1_mislabels` — no label column was chosen/)
+  assert.match(md, /`R1_mislabels`: no label column was chosen/)
   assert.match(md, /not measured/)
 })
 

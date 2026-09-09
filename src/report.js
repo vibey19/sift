@@ -76,7 +76,7 @@ export function buildReport({ dataset, result, mapping, edits, current }) {
     out.push('### Checks that did not run')
     out.push('')
     for (const skipped of summary.skipped_checks) {
-      out.push(`- \`${skipped.check}\` — ${skipped.reason}`)
+      out.push(`- \`${skipped.check}\`: ${skipped.reason}`)
     }
     out.push('')
   }

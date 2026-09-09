@@ -9,10 +9,6 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from sift import config, profile as prof
-from sift.checks import columns as column_checks, relations
-
-
 def audit(df, label=None, split=None):
     from sift import runner
 

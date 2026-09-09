@@ -1,8 +1,6 @@
 """C10, R1, D2 and D4 - the checks that fit a model or compare rows."""
 
 import numpy as np
-import pandas as pd
-import pytest
 
 from sift import config, encode, profile as prof
 from sift.checks import rows as rows_check

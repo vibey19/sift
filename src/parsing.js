@@ -4,10 +4,10 @@
 // server names a column something the browser cannot find, and every fix
 // touching it is silently discarded.
 
-export const CANDIDATES = [',', '\t', ';', '|']
+const CANDIDATES = [',', '\t', ';', '|']
 const SAMPLE_LINES = 20
 
-export function splitLines(text) {
+function splitLines(text) {
   const lines = []
   let current = ''
   let inQuotes = false
@@ -33,7 +33,7 @@ export function splitLines(text) {
   return lines
 }
 
-export function countOutsideQuotes(line, delimiter) {
+function countOutsideQuotes(line, delimiter) {
   let total = 0
   let inQuotes = false
   for (const char of line) {

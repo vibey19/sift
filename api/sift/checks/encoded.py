@@ -8,7 +8,6 @@ most of what a hand-written cleaning script spends its lines on.
 
 from __future__ import annotations
 
-import numpy as np
 import pandas as pd
 
 from .. import config, formats, profile as prof

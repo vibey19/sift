@@ -135,7 +135,7 @@ console.log(JSON.stringify(out))
         elif server_rows != theirs["rows"]:
             mismatches.append(
                 f"{name}: {len(server_rows)} rows vs {len(theirs['rows'])}"
-                + (f" — first difference {next((a, b) for a, b in zip(server_rows, theirs['rows']) if a != b)}"
+                + (f", first difference {next((a, b) for a, b in zip(server_rows, theirs['rows']) if a != b)}"
                    if len(server_rows) == len(theirs["rows"]) else "")
             )
 

@@ -10,9 +10,9 @@ Live: `<url>` · Sample datasets load from the empty state, so you can try it wi
 
 Every new dataset meant the same half hour. Read it in, check the dtypes, count the nulls, find the duplicates, discover the category column has four spellings of the same value, write the same six lines I wrote last month, lose the notebook, write them again for the next file.
 
-None of it is difficult. It is repetitive enough that people skip it, and the faults worth catching hide behind the boring ones — a column that quietly contains the answer, a few hundred rows labelled wrong, the same records sitting in both the training and test split. I wanted the repetitive part done in one click and the interesting part surfaced rather than buried, and I wanted to write the detection logic myself rather than call an API and hope.
+None of it is difficult. It is repetitive enough that people skip it, and the faults worth catching hide behind the boring ones: a column that quietly contains the answer, a few hundred rows labelled wrong, the same records sitting in both the training and test split. I wanted the repetitive part done in one click and the interesting part surfaced rather than buried, and I wanted to write the detection logic myself rather than call an API and hope.
 
-The split the tool draws is between fixes that need a decision and fixes that do not. Duplicates, spelling variants, columns that never vary and rows that are more than half empty get applied together on one button, because there is no judgement in any of them. Everything else — the leaked column, the contaminated rows, the model's opinion about your labels — is shown with its evidence and left alone until you say so.
+The split the tool draws is between fixes that need a decision and fixes that do not. Duplicates, spelling variants, columns that never vary and rows that are more than half empty get applied together on one button, because there is no judgement in any of them. Everything else, meaning the leaked column, the contaminated rows and the model's opinion about your labels, is shown with its evidence and left alone until you say so.
 
 ## What it checks
 
@@ -50,11 +50,11 @@ Contamination is the failure that produces the most confident wrong result, beca
 
 ### A note on near-duplicates, because I got this wrong first
 
-My first attempt encoded every row into one feature matrix — text through TF-IDF and SVD, numbers rank-scaled, categories one-hot encoded — normalised it, and compared rows by cosine similarity. It returned 27,595 near-duplicate pairs on a dataset where I had planted 20.
+My first attempt encoded every row into one feature matrix (text through TF-IDF and SVD, numbers rank-scaled, categories one-hot encoded), normalised it, and compared rows by cosine similarity. It returned 27,595 near-duplicate pairs on a dataset where I had planted 20.
 
 The problem is not the threshold. With a handful of one-hot columns, two unrelated rows already sit at a median cosine of 0.51, and the 99th percentile is 0.956. There is no cut point that separates real duplicates from coincidence. Centering the matrix first, which makes cosine behave like a correlation, drops unrelated pairs to a median of −0.03 and still leaves roughly 1,180 false pairs at 0.99.
 
-So I changed the question. A near-duplicate is the same record entered twice: every field agrees except one, and that one is close rather than different. Candidates come from hashing each leave-one-column-out view of the frame, which is linear in the row count instead of quadratic, and the pairwise comparison only ever runs inside a bucket already known to agree on everything else. The single differing field is then judged by its type — a number within tolerance of the column's spread, text above a similarity threshold, anything else equal after normalising case and whitespace.
+So I changed the question. A near-duplicate is the same record entered twice: every field agrees except one, and that one is close rather than different. Candidates come from hashing each leave-one-column-out view of the frame, which is linear in the row count instead of quadratic, and the pairwise comparison only ever runs inside a bucket already known to agree on everything else. The single differing field is then judged by its type: a number within tolerance of the column's spread, text above a similarity threshold, anything else equal after normalising case and whitespace.
 
 That took the same dataset from 27,595 pairs to all 20 planted pairs and nothing else.
 
@@ -62,13 +62,13 @@ That took the same dataset from 27,595 pairs to all 20 planted pairs and nothing
 
 There are five numbers in `api/sift/config.py` that decide what gets flagged. I set them by sweeping each one against two sample datasets where I had injected the faults myself, so I could measure recall and false positives instead of guessing. `python scripts/tune.py` reproduces every table below.
 
-**`NEAR_DUP_THRESHOLD = 0.70`** — the text similarity required of the one field two near-duplicate rows differ on. On the reviews data, 0.70 recovers all 50 planted rows with no false pairs. 0.75 drops to 42, 0.80 to 24, and 0.97 finds 6. I started at 0.97 and it was badly wrong, because that figure was carried over from the cosine design described above, where the threshold had to separate duplicates from the entire dataset. Once field agreement does that job, the threshold only has to confirm the differing text is close, and it can be much lower.
+**`NEAR_DUP_THRESHOLD = 0.70`** is the text similarity required of the one field two near-duplicate rows differ on. On the reviews data, 0.70 recovers all 50 planted rows with no false pairs. 0.75 drops to 42, 0.80 to 24, and 0.97 finds 6. I started at 0.97 and it was badly wrong, because that figure was carried over from the cosine design described above, where the threshold had to separate duplicates from the entire dataset. Once field agreement does that job, the threshold only has to confirm the differing text is close, and it can be much lower.
 
-**`LEAKAGE_ACCURACY = 0.95`** — a column scoring above this against the label, on its own, is treated as the answer rather than a feature. The planted leak scores 0.987. The strongest honest feature in either sample is a star rating at 0.859, and the best legitimate churn feature is tenure at 0.699. Anything between 0.87 and 0.98 separates them, so I took the middle. I rejected 0.98 because it clears the planted leak by only 0.007, and a slightly weaker leak in a real dataset would slip under it.
+**`LEAKAGE_ACCURACY = 0.95`**: a column scoring above this against the label, on its own, is treated as the answer rather than a feature. The planted leak scores 0.987. The strongest honest feature in either sample is a star rating at 0.859, and the best legitimate churn feature is tenure at 0.699. Anything between 0.87 and 0.98 separates them, so I took the middle. I rejected 0.98 because it clears the planted leak by only 0.007, and a slightly weaker leak in a real dataset would slip under it.
 
-**`MISLABEL_P_GIVEN_MAX = 0.10` and `MISLABEL_P_TOP_MIN = 0.75`** — a row is flagged when the model gives its stated label less than the first number and gives something else more than the second. At these values I get 39 of 40 planted mislabels on the churn data with no false flags, and 30 of 30 on the reviews data. Loosening to 0.20 and 0.50 recovers the fortieth row but admits two false ones. Tightening to 0.05 and 0.90 returns the same 39 and buys nothing. I would rather miss one row than start admitting rows that are fine.
+**`MISLABEL_P_GIVEN_MAX = 0.10` and `MISLABEL_P_TOP_MIN = 0.75`**: a row is flagged when the model gives its stated label less than the first number and gives something else more than the second. At these values I get 39 of 40 planted mislabels on the churn data with no false flags, and 30 of 30 on the reviews data. Loosening to 0.20 and 0.50 recovers the fortieth row but admits two false ones. Tightening to 0.05 and 0.90 returns the same 39 and buys nothing. I would rather miss one row than start admitting rows that are fine.
 
-**`WEAK_MODEL_ACCURACY = 0.60`** — below this the flags are still shown but tagged low confidence, because a model that cannot learn the task cannot judge its labels either. This one is a judgement call rather than a sweep. Both sample datasets sit far above it, at 0.985 and 0.930, so it fires only where a model has genuinely failed rather than merely struggled.
+**`WEAK_MODEL_ACCURACY = 0.60`**: below this the flags are still shown but tagged low confidence, because a model that cannot learn the task cannot judge its labels either. This one is a judgement call rather than a sweep. Both sample datasets sit far above it, at 0.985 and 0.930, so it fires only where a model has genuinely failed rather than merely struggled.
 
 The tuning is easier to trust because the sample datasets are generated by `scripts/make_dirty.py`, which records the index of every fault it injects. A check is measured on recall against those indices rather than on whether it returned something.
 
@@ -85,11 +85,11 @@ Accuracy falls and the flag count nearly triples, because without the leak the m
 
 ## What it can't do
 
-- Files up to 4.5MB, which works out to roughly 30,000–50,000 rows depending on width. That is a serverless request body limit. The fix is client-side upload straight to blob storage, which I have not built yet.
-- Near-duplicate detection is capped at 20,000 rows. Above that it needs approximate nearest neighbours — FAISS, HNSW, or LSH blocking. At the sizes Sift handles today, the exact comparison is faster than building the index would be.
+- Files up to 4.5MB, which works out to roughly 30,000 to 50,000 rows depending on width. That is a serverless request body limit. The fix is client-side upload straight to blob storage, which I have not built yet.
+- Near-duplicate detection is capped at 20,000 rows. Above that it needs approximate nearest neighbours: FAISS, HNSW, or LSH blocking. At the sizes Sift handles today, the exact comparison is faster than building the index would be.
 - Classification labels only. Regression targets need a different mislabel formulation and I have not written it.
 - CSV and TSV only.
-- Nothing is saved. Reload the page and your work is gone. That is deliberate, not an oversight — the backend stores nothing at all.
+- Nothing is saved. Reload the page and your work is gone. That is deliberate, not an oversight. The backend stores nothing at all.
 
 ## Running it locally
 
@@ -116,7 +116,7 @@ Pin the virtualenv to Python 3.12. That is what the serverless runtime provides,
 
 Two endpoints. `POST /api/profile` returns column types so the label picker can render, and `POST /api/audit` returns every finding. The file crosses the wire twice, once per call, which is the cost of letting you choose a label column before the label-aware checks run.
 
-pandas and scikit-learn do everything analytical. No deep learning, no API calls, no model downloads. Text features go through TF-IDF and TruncatedSVD rather than sentence embeddings — embeddings would be slightly better at catching paraphrased duplicates, but sentence-transformers pulls in PyTorch, which is roughly 800MB and would not deploy on a free tier. TF-IDF installs in seconds and the quality difference on this task is small.
+pandas and scikit-learn do everything analytical. No deep learning, no API calls, no model downloads. Text features go through TF-IDF and TruncatedSVD rather than sentence embeddings. Embeddings would be slightly better at catching paraphrased duplicates, but sentence-transformers pulls in PyTorch, which is roughly 800MB and would not deploy on a free tier. TF-IDF installs in seconds and the quality difference on this task is small.
 
 The frontend is React with plain JSX and no framework beyond that: no router, no state library, no component library, no CSS framework. The CSV parser is written out by hand in `src/csv.js`, because the browser owns the file for the whole session and something had to parse it. Edits are kept as an append-only log and replayed over the original rows on every render, which makes undo a single pop and keeps the parsed file authoritative.
 

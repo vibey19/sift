@@ -12,7 +12,6 @@ import io
 import re
 import unicodedata
 
-import numpy as np
 import pandas as pd
 
 from . import config, formats, parsing
@@ -266,8 +265,3 @@ def profile_frame(df: pd.DataFrame) -> list[dict]:
 
 def types_by_column(profiles: list[dict]) -> dict[str, str]:
     return {p["name"]: p["inferred_type"] for p in profiles}
-
-
-def numeric_frame(df: pd.DataFrame, types: dict[str, str]) -> pd.DataFrame:
-    cols = [c for c in df.columns if types.get(c) == NUMERIC]
-    return pd.DataFrame({c: as_numeric(df[c]).reindex(df.index) for c in cols})

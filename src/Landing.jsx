@@ -50,7 +50,7 @@ const STEPS = [
 ]
 
 const LIMITS = [
-  'Files up to 4.5MB, roughly 30–50k rows. That is a serverless request body limit.',
+  'Files up to 4.5MB, roughly 30k to 50k rows. That is a serverless request body limit.',
   'Near-duplicate detection is capped at 20,000 rows.',
   'Classification labels only. Regression targets need a different mislabel formulation.',
   'CSV and TSV only.',
@@ -98,7 +98,7 @@ export default function Landing({ onOpen }) {
           <p className="lede">
             Drop in a CSV. Sift runs fifteen checks, tells you what is wrong in plain English,
             and fixes the safe ones in one click. The rest it hands to you with the row numbers
-            and a reason. Nothing is stored — your file is audited by a stateless function and
+            and a reason. Nothing is stored: your file is audited by a stateless function and
             forgotten the moment the response is sent.
           </p>
           <div className="btn-row" style={{ marginTop: 28 }}>
@@ -133,7 +133,7 @@ export default function Landing({ onOpen }) {
             None of it is difficult. It is just repetitive enough that people skip it, and the
             things worth catching hide behind the boring things. Sift does the repetitive part
             in one click, then spends the rest of its time on the faults a quick pass would
-            never surface — a column that leaks your target, records sitting in both train and
+            never surface: a column that leaks your target, records sitting in both train and
             test, rows labelled by someone having a bad day.
           </p>
         </div>

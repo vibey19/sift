@@ -241,8 +241,9 @@ export default function App({ handoff, onLeave }) {
                     ))}
                   </ul>
                   <p className="autofix-note">
-                    Nothing here needs a decision from you. Anything that does — the leaked
-                    column, the contaminated rows, the model's relabelling — is left alone.
+                    Nothing here needs a decision from you. Anything that does, such as
+                    the leaked column, the contaminated rows or the model's relabelling, is
+                    left alone.
                   </p>
                 </div>
                 <button className="button-primary" onClick={applyFixes}>
@@ -284,7 +285,7 @@ export default function App({ handoff, onLeave }) {
                 <div className="label" style={{ marginBottom: 6 }}>Not run</div>
                 {result.summary.skipped_checks.map((s) => (
                   <div key={s.check} className="mono" style={{ fontSize: 13 }}>
-                    {s.check} — {s.reason}
+                    {s.check}: {s.reason}
                   </div>
                 ))}
               </div>

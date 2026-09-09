@@ -14,7 +14,7 @@ from sklearn.model_selection import StratifiedKFold, cross_val_predict
 
 from .. import config, profile as prof
 from ..encode import Encoded
-from ..issue import HIGH, MEDIUM, make_issue, pct
+from ..issue import HIGH, MEDIUM, make_issue
 
 CHECK = "R1_mislabels"
 
