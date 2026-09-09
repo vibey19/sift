@@ -97,16 +97,6 @@ MISLABEL_MIN_ROWS = 50
 # failure is silent, so these classes are dropped and reported instead.
 MIN_CLASS_MEMBERS_FOR_CV = 5
 
-# --- thresholds set by hand against the sample datasets ---------------------
-# See PLAN.md section 12. These are starting points, not chosen values. Each one
-# gets set by looking at what it actually flags, and what it flagged at the
-# values that were rejected.
-NEAR_DUP_THRESHOLD = 0.97  # TODO: tune
-MISLABEL_P_GIVEN_MAX = 0.10  # TODO: tune
-MISLABEL_P_TOP_MIN = 0.75  # TODO: tune
-LEAKAGE_ACCURACY = 0.98  # TODO: tune
-WEAK_MODEL_ACCURACY = 0.60  # TODO: tune
-
 # --- D2/D4 near-duplicate matching ------------------------------------------
 # A near-duplicate is the same record entered twice: every field agrees except
 # one, and that one is close rather than different. Cosine similarity over an
@@ -115,7 +105,45 @@ WEAK_MODEL_ACCURACY = 0.60  # TODO: tune
 # matches swamps the real pairs at any threshold.
 #
 # Candidate pairs come from hashing each leave-one-column-out view of the frame,
-# which is linear rather than quadratic. The differing field is then judged:
-NEAR_DUP_NUMERIC_TOLERANCE = 0.05  # relative gap allowed in the one differing number
+# which is linear rather than quadratic. The differing field is then judged.
+#
+# Measured against the column's interquartile spread, not the value's own size:
+# a one-month difference is 33% of a tenure of 3 and 1.7% of a tenure of 60, and
+# the relative version missed 6 of 40 planted pairs because of it.
+NEAR_DUP_NUMERIC_TOLERANCE = 0.05
 # A bucket larger than this is a mass of identical rows, already reported by D1.
 NEAR_DUP_MAX_GROUP = 50
+
+# --- thresholds set by hand against the sample datasets ---------------------
+# Chosen by sweeping each one against the recorded defects in samples/.
+# Reproduce with: python scripts/tune.py
+
+# Text similarity required of the one field two near-duplicate rows differ on.
+# On the reviews set 0.70 recovers all 50 planted rows with no false pairs, and
+# so does 0.60, so the low end is flat. 0.75 drops to 42, 0.80 to 24, and the
+# 0.97 this started at finds 6. That old value was carried over from the cosine
+# design this check replaced, where the threshold had to separate duplicates
+# from the entire dataset; here the field-agreement structure has already done
+# that, and the threshold only confirms the differing text is close.
+NEAR_DUP_THRESHOLD = 0.70
+
+# A column scoring above this against the label, on its own, is the answer
+# rather than a feature. The planted leak scores 0.987 and the strongest honest
+# feature in either sample is a star rating at 0.859, so anything in that band
+# separates them. 0.95 sits in the middle of it. 0.98 also works but clears the
+# planted leak by only 0.007, which would miss a slightly weaker real one.
+LEAKAGE_ACCURACY = 0.95
+
+# A row is flagged when the model gives its stated label less than the first
+# number and gives something else more than the second. At these values 39 of
+# 40 planted mislabels come back on churn with no false flags, and 30 of 30 on
+# reviews. Loosening to 0.20/0.50 recovers the fortieth row but admits two
+# false ones; tightening to 0.05/0.90 returns the same 39 and buys nothing.
+MISLABEL_P_GIVEN_MAX = 0.10
+MISLABEL_P_TOP_MIN = 0.75
+
+# Below this the flags are still shown but tagged low confidence, because a
+# model that cannot learn the task cannot judge its labels either. Both sample
+# datasets sit far above it (0.985 and 0.930), so it fires only where the model
+# has genuinely failed rather than merely struggled.
+WEAK_MODEL_ACCURACY = 0.60
