@@ -1,0 +1,6 @@
+fastapi==0.115.6
+pydantic==2.10.4
+pandas==2.2.3
+numpy==2.2.1
+scikit-learn==1.6.0
+scipy==1.15.0

@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.python-version
+
+# Node
+node_modules/
+dist/
+*.local
+
+# Vercel
+.vercel/
+
+# Tooling and working notes - not part of the shipped project
+.claude/
+CLAUDE.md
+.mcp.json
+*.local.json
+PLAN.md
+
+# Generated ground truth - must not ship to the deployed app
+samples/_truth.json
+
+# OS
+.DS_Store
