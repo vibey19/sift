@@ -119,7 +119,10 @@ def make_churn(seed: int = SEED) -> tuple[pd.DataFrame, dict]:
     df.loc[rng.choice(n, int(n * 0.35), replace=False), "email"] = np.nan
     df.loc[mixed_type, "discount_pct"] = rng.choice(["N/A", "none", "unknown"], len(mixed_type))
     df.loc[implausible, "signup_date"] = "2031-04-02"
-    for col in ["plan", "contract", "monthly_charges", "support_tickets", "email", "discount_pct"]:
+    # Has to clear half the columns, not reach it, or C1 will not call these
+    # rows sparse and the fixture would assert against a check that never fires.
+    for col in ["plan", "contract", "monthly_charges", "monthly_charges_eur",
+                "support_tickets", "email", "discount_pct", "signup_date"]:
         df.loc[sparse_rows, col] = np.nan
 
     # Copies are appended after the in-place corruption so a duplicated row is a

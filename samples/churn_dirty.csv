@@ -72,7 +72,7 @@ C000069,2020-02-23,EU,Premium,Two year,52,94.15,86.62,1.0,27,user69@example.com,
 C000070,2019-12-25,EU,Standard,Annual,54,45.34,41.71,1.0,25,user70@example.com,train,0,
 C000071,2020-04-23,EU,Basic,Annual,50,22.75,20.93,1.0,6,,test,0,
 C000072,2018-09-01,EU,Premium,Monthly,70,105.37,96.94,2.0,N/A,user72@example.com,train,1,service
-C000073,2020-02-23,EU,,,52,,51.05,,,,train,0,
+C000073,,EU,,,52,,,,,,train,0,
 C000074,2018-10-01,EU,Standard,Monthly,69,32.14,29.57,0.0,19,user74@example.com,train,0,
 C000075,2020-06-22,EU,Premium,Monthly,48,61.04,56.16,0.0,19,user75@example.com,test,1,price
 C000076,2024-04-02,EU,Standard,Two year,2,61.16,56.27,2.0,26,user76@example.com,train,1,competitor
@@ -465,7 +465,7 @@ C000462,2023-11-04,EU,Basic,Monthly,7,107.22,98.64,3.0,8,user462@example.com,tra
 C000463,2020-12-19,EU,Premium,Annual,42,114.27,105.13,3.0,22,user463@example.com,train,1,moved
 C000464,2022-03-14,EU,Standard,Annual,27,82.81,76.19,2.0,22,user464@example.com,test,1,service
 C000465,2022-06-12,EU,Standard,Monthly,24,58.93,54.22,0.0,22,user465@example.com,train,1,price
-C000466,2019-04-29,EU,,,62,,55.65,,,,train,0,
+C000466,,EU,,,62,,,,,,train,0,
 C000467,2020-05-23,EU,Standard,Two year,49,90.65,83.4,1.0,27,user467@example.com,test,1,moved
 C000468,2022-07-12,EU,Basic,Monthly,23,84.86,78.07,3.0,28,user468@example.com,train,1,service
 C000469,2024-03-03,EU,Basic,Monthly,3,65.1,59.89,1.0,16,,test,1,price
@@ -1063,7 +1063,7 @@ C001060,2019-01-29,EU,Standard,Two year,65,83.08,76.43,2.0,9,user1060@example.co
 C001061,2022-06-12,EU,Standard,Monthly,24,41.32,38.01,1.0,3,user1061@example.com,test,1,moved
 C001062,2031-04-02,EU,Standard,Monthly,10,81.84,75.29,0.0,25,user1062@example.com,test,0,
 C001063,2022-10-10,EU,Standard,Monthly,20,51.63,47.5,1.0,25,user1063@example.com,test,0,
-C001064,2019-08-27,EU,,,58,,65.88,,,,train,0,
+C001064,,EU,,,58,,,,,,train,0,
 C001065,2022-12-09,EU,Standard,Monthly,18,54.37,50.02,5.0,7,,test,1,moved
 C001066,2018-09-01,EU,Standard,Monthly,70,61.9,56.95,2.0,13,user1066@example.com,train,0,
 C001067,2019-10-26,EU,Standard,Monthly,56,61.33,56.42,0.0,6,user1067@example.com,train,0,
@@ -1760,7 +1760,7 @@ C001757,2023-10-05,EU,Premium,Monthly,8,20.0,18.4,1.0,24,user1757@example.com,tr
 C001758,2022-06-12,EU,Premium,Annual,24,103.39,95.12,1.0,10,user1758@example.com,train,1,price
 C001759,2023-10-05,EU,Standard,Annual,8,78.2,71.94,2.0,15,,train,0,
 C001760,2023-07-07,EU,Basic,Two year,11,58.08,53.43,0.0,25,user1760@example.com,train,1,
-C001761,2022-09-10,EU,,,21,,66.66,,,,train,1,competitor
+C001761,,EU,,,21,,,,,,train,1,competitor
 C001762,2021-05-18,EU,Standard,Monthly,37,35.42,32.59,2.0,29,,train,0,
 C001763,2018-11-30,EU,Basic,Annual,67,85.09,78.28,1.0,28,user1763@example.com,train,0,
 C001764,2023-09-05,EU,Basic,Monthly,9,88.37,81.3,2.0,27,user1764@example.com,train,1,competitor
@@ -2545,7 +2545,7 @@ C002542,2020-08-21,EU,Standard,Annual,46,89.48,82.32,1.0,25,,train,0,
 C002543,2020-01-24,EU,Standard,Two year,53,59.0,54.28,1.0,22,user2543@example.com,train,0,
 C002544,2020-09-20,EU,Standard,Two year,45,60.18,55.37,1.0,4,,train,0,
 C002545,2020-09-20,EU,Basic,Two year,45,51.88,47.73,1.0,5,user2545@example.com,train,0,
-C002546,2020-01-24,EU,,,53,,75.25,,,,test,0,
+C002546,,EU,,,53,,,,,,test,0,
 C002547,2020-01-24,EU,Standard,Monthly,53,55.12,50.71,0.0,15,,test,0,
 C002548,2020-08-21,EU,Premium,Annual,46,133.92,123.21,0.0,17,,train,1,price
 C002549,2021-03-19,EU,Standard,Monthly,39,39.51,36.35,2.0,18,user2549@example.com,test,1,competitor
@@ -2704,7 +2704,7 @@ C002701,2023-06-07,EU,Standard,Monthly,12,83.28,76.62,1.0,15,user2701@example.co
 C002702,2018-11-30,EU,Premium,Monthly,67,75.18,69.17,1.0,22,,train,0,
 C002703,2019-01-29,EU,Premium,Annual,65,49.48,45.52,1.0,13,user2703@example.com,train,0,
 C002704,2019-09-26,EU,Premium,Annual,57,72.22,66.44,0.0,12,,test,0,
-C002705,2023-04-08,EU,,,14,,58.48,,,,train,0,
+C002705,,EU,,,14,,,,,,train,0,
 C002706,2021-10-15,EU,Basic,Monthly,32,35.49,32.65,2.0,11,user2706@example.com,train,1,moved
 C002707,2023-11-04,EU,Basic,Monthly,7,63.53,58.45,0.0,28,,train,1,moved
 C002708,2019-02-28,EU,Basic,Two year,64,83.29,76.63,0.0,17,user2708@example.com,train,0,
@@ -2748,7 +2748,7 @@ C002745,2023-03-09,EU,PREMIUM,Annual,15,107.67,99.06,1.0,25,,test,1,competitor
 C002746,2022-11-09,EU,Premium,Monthly,19,22.66,20.85,1.0,15,user2746@example.com,train,1,competitor
 C002747,2022-07-12,EU,Standard,Annual,23,61.27,56.37,2.0,11,user2747@example.com,test,1,price
 C002748,2023-03-09,EU,Premium,Annual,15,46.41,42.7,2.0,17,user2748@example.com,train,1,service
-C002749,2023-12-04,EU,,,6,,63.36,,,,train,1,competitor
+C002749,,EU,,,6,,,,,,train,1,competitor
 C002750,2018-11-30,EU,Standard,Monthly,67,97.28,89.5,1.0,28,,train,1,service
 C002751,2018-10-01,EU,Basic,Annual,69,70.46,64.82,3.0,9,user2751@example.com,train,0,
 C002752,2019-06-28,EU,Basic,Annual,60,104.36,96.01,1.0,21,user2752@example.com,train,0,
@@ -2895,7 +2895,7 @@ C002892,2020-09-20,EU,Standard,Annual,45,89.79,82.61,0.0,20,user2892@example.com
 C002893,2019-10-26,EU,Standard,Monthly,56,98.87,90.96,0.0,29,,train,0,
 C002894,2021-07-17,EU,Basic,Monthly,35,81.1,74.61,2.0,11,user2894@example.com,train,1,service
 C002895,2021-06-17,EU,Standard,Monthly,36,101.64,93.51,0.0,14,user2895@example.com,train,0,
-C002896,2021-03-19,EU,,,39,,75.12,,,,train,0,
+C002896,,EU,,,39,,,,,,train,0,
 C002897,2024-03-03,EU,Basic,Annual,3,67.69,62.27,1.0,unknown,,test,1,competitor
 C002898,2020-01-24,EU,Basic,Monthly,53,68.2,62.74,0.0,27,,train,0,
 C002899,2021-11-14,EU,Basic,Monthly,31,39.48,36.32,3.0,15,user2899@example.com,train,0,
