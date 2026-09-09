@@ -3,5 +3,5 @@
     { "source": "/api/(.*)", "destination": "/api/index" },
     { "source": "/app", "destination": "/index.html" }
   ],
-  "functions": { "api/index.py": { "maxDuration": 300 } }
+  "functions": { "api/index.py": { "maxDuration": 60 } }
 }

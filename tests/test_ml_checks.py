@@ -112,14 +112,29 @@ def test_d4_needs_a_split_column(churn_loaded):
     assert any("no split column" in s["reason"] for s in skipped)
 
 
-def test_d2_explains_itself_instead_of_running_above_the_cap(churn_loaded, monkeypatch):
-    monkeypatch.setattr(config, "NEAR_DUP_MAX_ROWS", 10)
+def test_d2_runs_at_the_row_counts_it_used_to_refuse():
+    # The check had a 20,000 row cap inherited from the cosine design it
+    # replaced, where the comparison really was quadratic. Hashing is linear,
+    # so the cap was refusing to run a check that finishes in a second and a
+    # half. Fifty thousand rows, with forty pairs planted at the end of them.
+    import pandas as pd
     from sift.checks import dataset
 
-    issues, skipped = dataset.run(churn_loaded, prof.profile_frame(churn_loaded), "churned", "split")
-    skip_issue = [i for i in issues if i["id"] == "near_duplicates_skipped"]
-    assert skip_issue and "approximate nearest neighbours" in skip_issue[0]["detail"]
-    assert any(s["check"] == "D2_near_duplicates" for s in skipped)
+    rng = np.random.default_rng(4)
+    n = 50_000
+    df = pd.DataFrame({
+        "id": [f"X{i:07d}" for i in range(n)],
+        "name": rng.choice(["ann", "bob", "cai", "dev", "eli"], n),
+        "city": rng.choice(["leeds", "york", "hull", "derby"], n),
+        "amount": rng.uniform(1, 500, n).round(2),
+        "tenure": rng.integers(1, 72, n),
+    }).astype(str)
+    planted = df.iloc[:40].copy()
+    planted["tenure"] = (planted["tenure"].astype(int) + 1).astype(str)
+    df = pd.concat([df, planted], ignore_index=True)
+
+    pairs = dataset._candidate_pairs(df, prof.profile_frame(df), list(df.columns))
+    assert len(pairs) == 40
 
 
 def test_svd_is_capped_below_the_rank_of_the_matrix():

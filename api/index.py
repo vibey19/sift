@@ -1,5 +1,7 @@
+import gzip
 import logging
 import sys
+import zlib
 from pathlib import Path
 
 # The handler is loaded as a top-level module by uvicorn and by Vercel's Python
@@ -12,7 +14,7 @@ import pandas
 import sklearn
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 
 from sift import runner
 
@@ -48,6 +50,32 @@ class AuditRequest(BaseModel):
     checks: list[str] | None = None
 
 
+# The platform caps a request body at 4.5MB, which is thirty to fifty thousand
+# rows of CSV and well under the row limit the checks themselves impose. CSV is
+# mostly repeated separators and short tokens, so it compresses about eight to
+# one, and sending it compressed is the difference between refusing a file and
+# auditing it. The browser gzips anything worth gzipping and says so in a header
+# of its own; Content-Encoding is left alone because it describes what the
+# network did rather than what the client chose to do.
+COMPRESSION_HEADER = "x-sift-compression"
+
+
+async def _payload(request: Request, model: type[BaseModel]):
+    raw = await request.body()
+    if request.headers.get(COMPRESSION_HEADER) == "gzip":
+        try:
+            raw = gzip.decompress(raw)
+        except (OSError, EOFError, zlib.error) as exc:
+            raise HTTPException(
+                status_code=400,
+                detail="The request body said it was gzipped and could not be read as gzip.",
+            ) from exc
+    try:
+        return model.model_validate_json(raw)
+    except ValidationError as exc:
+        raise HTTPException(status_code=422, detail=f"Malformed request: {exc.error_count()} problems") from exc
+
+
 def _load(csv: str, delimiter: str | None):
     try:
         return runner.load(csv, delimiter)
@@ -74,11 +102,13 @@ def health() -> dict:
 
 
 @app.post("/api/profile")
-def profile(request: ProfileRequest) -> dict:
-    return runner.profile_payload(_load(request.csv, request.delimiter))
+async def profile(request: Request) -> dict:
+    body: ProfileRequest = await _payload(request, ProfileRequest)
+    return runner.profile_payload(_load(body.csv, body.delimiter))
 
 
 @app.post("/api/audit")
-def audit(request: AuditRequest) -> dict:
-    df = _load(request.csv, request.delimiter)
-    return runner.audit(df, request.label_column, request.split_column, request.checks)
+async def audit(request: Request) -> dict:
+    body: AuditRequest = await _payload(request, AuditRequest)
+    df = _load(body.csv, body.delimiter)
+    return runner.audit(df, body.label_column, body.split_column, body.checks)

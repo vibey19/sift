@@ -50,8 +50,7 @@ const STEPS = [
 ]
 
 const LIMITS = [
-  'Files up to 4.5MB, roughly 30k to 50k rows. That is a serverless request body limit.',
-  'Near-duplicate detection is capped at 20,000 rows.',
+  'Files up to 50,000 rows. The upload is compressed, so that is the real limit rather than the 4.5MB request body.',
   'Classification labels only. Regression targets need a different mislabel formulation.',
   'CSV and TSV only.',
   'Nothing is saved. Reload the page and your work is gone.',

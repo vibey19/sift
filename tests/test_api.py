@@ -106,3 +106,48 @@ def test_a_file_full_of_awkward_shapes_still_audits():
     ]
     for csv in cases:
         assert client.post("/api/audit", json={"csv": csv}).status_code == 200, csv[:24]
+
+
+# --- a compressed request body ------------------------------------------------
+#
+# The platform caps a body at 4.5MB, which is thirty to fifty thousand rows of
+# CSV and well under the row limit the checks impose. CSV compresses about five
+# to one on real data, so sending it gzipped is the difference between refusing
+# a file and auditing it. The browser decides; the server has to accept both.
+
+def test_a_gzipped_body_is_read_the_same_as_a_plain_one(churn_csv):
+    import gzip
+    import json
+
+    body = json.dumps({"csv": churn_csv}).encode()
+    plain = client.post("/api/profile", content=body, headers={"Content-Type": "application/json"})
+    packed = client.post(
+        "/api/profile",
+        content=gzip.compress(body),
+        headers={"Content-Type": "application/json", "X-Sift-Compression": "gzip"},
+    )
+    assert plain.status_code == packed.status_code == 200
+    assert plain.json() == packed.json()
+
+
+def test_the_compression_is_worth_doing(churn_csv):
+    import gzip
+    import json
+
+    body = json.dumps({"csv": churn_csv}).encode()
+    assert len(body) / len(gzip.compress(body)) > 3
+
+
+def test_a_body_that_is_not_gzip_after_all_says_so():
+    response = client.post(
+        "/api/profile",
+        content=b"this is not gzip",
+        headers={"Content-Type": "application/json", "X-Sift-Compression": "gzip"},
+    )
+    assert response.status_code == 400
+    assert "gzip" in response.json()["detail"]
+
+
+def test_a_malformed_body_is_rejected_rather_than_crashing():
+    response = client.post("/api/audit", json={"not_a_field": 1})
+    assert response.status_code == 422

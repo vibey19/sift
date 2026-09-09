@@ -110,7 +110,9 @@ export function buildReport({ dataset, result, mapping, edits, current }) {
   if (!edits.length) {
     out.push('None. This report describes the file as it was uploaded.')
   } else {
-    edits.forEach((edit, i) => out.push(`${i + 1}. ${describeEdit(edit)}`))
+    edits.forEach((edit, i) =>
+      out.push(`${i + 1}. ${describeEdit(edit, current.applied?.[i]?.changed)}`),
+    )
     out.push('')
     out.push(
       `The exported file has ${current.rows.length.toLocaleString()} rows and ` +
@@ -132,23 +134,31 @@ export function buildReport({ dataset, result, mapping, edits, current }) {
   return out.join('\n')
 }
 
-function describeEdit(edit) {
-  const n = edit.rowIndices?.length ?? Object.keys(edit.values ?? {}).length
+// `changed` is what replay measured rather than what the check estimated. The
+// two differ whenever an earlier fix moved the ground under a later one, and
+// the report has to describe what happened.
+function describeEdit(edit, changed) {
+  const n = changed ?? edit.rowIndices?.length ?? Object.keys(edit.values ?? {}).length
+  const cells = changed == null ? '' : ` ${changed.toLocaleString()} cells changed.`
   switch (edit.op) {
     case 'drop_rows':
-      return `Dropped ${n} rows.`
+      return `Dropped ${n.toLocaleString()} rows.`
     case 'dedupe':
-      return 'Removed duplicate rows, keeping the first of each group.'
+      return changed == null
+        ? 'Removed duplicate rows, keeping the first of each group.'
+        : `Removed ${changed.toLocaleString()} duplicate rows, keeping the first of each group.`
     case 'relabel':
-      return `Relabelled ${n} rows in \`${edit.column}\` to the model's prediction.`
+      return `Relabelled ${n.toLocaleString()} rows in \`${edit.column}\` to the model's prediction.`
     case 'normalize_values':
-      return `Normalised ${edit.from.length} spellings in \`${edit.column}\` to \`${edit.to}\`.`
+      return `Normalised ${edit.from.length} spellings in \`${edit.column}\` to \`${edit.to}\`.${cells}`
     case 'drop_column':
       return `Dropped the \`${edit.column}\` column.`
     case 'strip_markup':
-      return `Removed the HTML markup from \`${edit.column}\`.`
+      return `Removed the HTML markup from \`${edit.column}\`.${cells}`
     case 'strip_invisible':
-      return 'Removed zero-width characters and folded non-breaking spaces to ordinary ones.'
+      return (
+        'Removed zero-width characters and folded non-breaking spaces to ordinary ones.' + cells
+      )
     default:
       return edit.op
   }

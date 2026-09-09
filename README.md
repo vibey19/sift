@@ -85,8 +85,7 @@ Accuracy falls and the flag count nearly triples, because without the leak the m
 
 ## What it can't do
 
-- Files up to 4.5MB, which works out to roughly 30,000 to 50,000 rows depending on width. That is a serverless request body limit. The fix is client-side upload straight to blob storage, which I have not built yet.
-- Near-duplicate detection is capped at 20,000 rows. Above that it needs approximate nearest neighbours: FAISS, HNSW, or LSH blocking. At the sizes Sift handles today, the exact comparison is faster than building the index would be.
+- Files up to 50,000 rows. The request body is capped at 4.5MB by the platform, but the browser gzips the upload and CSV compresses about five to one, so a full 50,000-row file arrives in well under a megabyte and the row limit binds first. A file that is both long and very wide can still be refused, and the fix for that is client-side upload straight to blob storage, which I have not built.
 - Classification labels only. Regression targets need a different mislabel formulation and I have not written it.
 - CSV and TSV only.
 - Nothing is saved. Reload the page and your work is gone. That is deliberate, not an oversight. The backend stores nothing at all.

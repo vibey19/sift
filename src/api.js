@@ -16,6 +16,13 @@ const FIXTURES = {
   audit_no_label: () => import('./fixtures/audit_no_label.json'),
 }
 
+// The platform refuses a request body over 4.5MB. CSV compresses about eight to
+// one, so gzipping the payload is the difference between refusing a thirty
+// megabyte file and auditing it. Below the threshold the saving is not worth a
+// pass over the string.
+const BODY_LIMIT = 4.5 * 1024 * 1024
+const COMPRESS_ABOVE = 256 * 1024
+
 export class ApiError extends Error {
   constructor(message, status) {
     super(message)
@@ -32,17 +39,46 @@ async function fromFixture(name) {
   return module.default
 }
 
+async function gzip(text) {
+  // CompressionStream is in every browser this app runs in, but a missing one
+  // should cost a large file rather than every file, so the caller falls back
+  // to sending the string as it is.
+  if (typeof CompressionStream === 'undefined') return null
+  try {
+    const stream = new Blob([text]).stream().pipeThrough(new CompressionStream('gzip'))
+    return new Uint8Array(await new Response(stream).arrayBuffer())
+  } catch {
+    return null
+  }
+}
+
+async function encodeBody(body) {
+  const text = JSON.stringify(body)
+  const raw = new Blob([text]).size
+  if (raw < COMPRESS_ABOVE) return { body: text, bytes: raw, headers: {} }
+  const packed = await gzip(text)
+  if (!packed || packed.byteLength >= raw) return { body: text, bytes: raw, headers: {} }
+  return { body: packed, bytes: packed.byteLength, headers: { 'X-Sift-Compression': 'gzip' } }
+}
+
 async function post(path, body) {
   // Serialised before the try, so a bad payload cannot masquerade as the network
   // being down. That exact confusion cost an afternoon once.
-  const payload = JSON.stringify(body)
+  const payload = await encodeBody(body)
+  if (payload.bytes > BODY_LIMIT) {
+    throw new ApiError(
+      `That file is ${(payload.bytes / 1024 / 1024).toFixed(1)}MB even after compression, over ` +
+        'the 4.5MB the server will accept in one request. Sample it down and audit the sample.',
+      413,
+    )
+  }
 
   let response
   try {
     response = await fetch(path, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: payload,
+      headers: { 'Content-Type': 'application/json', ...payload.headers },
+      body: payload.body,
     })
   } catch {
     throw new ApiError('Could not reach the server. Check your connection and try again.', 0)

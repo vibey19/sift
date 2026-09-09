@@ -16,8 +16,8 @@ import Upload from './components/Upload.jsx'
 // a sentence instead of a 413 after a slow upload.
 const MAX_ROWS = 50_000
 const MAX_COLS = 200
-// Vercel caps a serverless request body at 4.5MB.
-const MAX_BYTES = 4.5 * 1024 * 1024
+// The request body limit is enforced in api.js, which is where the payload is
+// compressed and its real size is therefore known.
 
 export default function App({ handoff, onLeave }) {
   const [stage, setStage] = useState('empty')
@@ -73,10 +73,6 @@ export default function App({ handoff, onLeave }) {
     }
     if (parsed.columns.length > MAX_COLS) {
       setError(`${parsed.columns.length} columns is over the ${MAX_COLS} column limit.`)
-      return
-    }
-    if (new Blob([text]).size > MAX_BYTES) {
-      setError('That file is over 4.5MB, which is the serverless request limit. Sample it down.')
       return
     }
 
@@ -226,7 +222,7 @@ export default function App({ handoff, onLeave }) {
         {stage === 'auditing' && (
           <Working
             title="Auditing"
-            note="Cross-validating a model over your rows. On a large file this takes a while."
+            note={auditingNote(dataset?.rows.length ?? 0, Boolean(mapping.label))}
           />
         )}
 
@@ -272,16 +268,21 @@ export default function App({ handoff, onLeave }) {
                 </div>
                 <ol>
                   {edits.map((edit, i) => (
-                    <li key={i}>{describeEdit(edit)}</li>
+                    <li key={i}>{describeEdit(edit, current.applied?.[i]?.changed)}</li>
                   ))}
                 </ol>
+                <p className="autofix-note" style={{ marginBottom: 12 }}>
+                  The findings below still describe the file as you uploaded it. Re-auditing
+                  runs every check again over the rows as they stand now, which is the only
+                  way to see what the edits fixed and what they did not.
+                </p>
                 <div className="actions" style={{ marginBottom: 0 }}>
                   <button onClick={undo}>Undo the last edit</button>
-                  <button onClick={reaudit}>Re-audit the cleaned data</button>
-                  <button onClick={downloadReport}>Download the audit report</button>
-                  <button className="button-primary" onClick={download}>
-                    Download cleaned CSV
+                  <button className="button-primary" onClick={reaudit}>
+                    Re-audit the cleaned data
                   </button>
+                  <button onClick={downloadReport}>Download the audit report</button>
+                  <button onClick={download}>Download cleaned CSV</button>
                 </div>
               </div>
             )}
@@ -329,6 +330,26 @@ function Working({ title, note }) {
       </p>
       <div className="loading-bar" aria-hidden><i /></div>
     </div>
+  )
+}
+
+// A progress bar that cannot say how far along it is has to say something else,
+// or twenty seconds of it reads as a hang. The slow part is named, and so is
+// roughly how long it should take, because a number that turns out to be right
+// is what makes waiting feel like waiting rather than like failure.
+function auditingNote(rows, hasLabel) {
+  if (!hasLabel) {
+    return rows > 20_000
+      ? `Twenty-two checks over ${rows.toLocaleString()} rows. Around ten seconds at this size.`
+      : 'Running twenty-two checks over your rows.'
+  }
+  // Cross-validating a model is most of the time, and it is the part that grows
+  // with the row count. These are measured, not guessed: 5s at 1,500 rows, 10s
+  // at 12,000, 21s at 30,000.
+  const seconds = Math.max(5, Math.round(rows / 1500))
+  return (
+    `Cross-validating a model over ${rows.toLocaleString()} rows so that every row is ` +
+    `scored by one that never saw it. Around ${seconds} seconds at this size.`
   )
 }
 

@@ -43,13 +43,34 @@ export function replay(columns, rows, edits) {
 
   const cellAt = (row, col) => overrides.get(`${row}:${col}`) ?? rows[row][col]
 
+  // What each edit changed, in the order they were applied. The count an issue
+  // carries is what the check saw in the file as it arrived, and by the time a
+  // fix runs the ones before it have moved the ground under it: C11 blanks
+  // twenty sentinels and the fill that follows then touches sixty cells rather
+  // than the forty C1 counted. Reporting the estimate as though it were the
+  // result is how an edit log ends up disagreeing with the file beside it.
+  const applied = []
+  let changed = 0
+  const setCell = (row, col, value) => {
+    if (String(cellAt(row, col) ?? '') === String(value)) return
+    overrides.set(`${row}:${col}`, value)
+    changed += 1
+  }
+  const dropRow = (row) => {
+    if (droppedRows.has(row)) return
+    droppedRows.add(row)
+    changed += 1
+  }
+
   for (const edit of edits) {
+    changed = 0
     switch (edit.op) {
       case DROP_ROWS:
-        for (const row of edit.rowIndices) droppedRows.add(row)
+        for (const row of edit.rowIndices) dropRow(row)
         break
 
       case DROP_COLUMN:
+        if (!droppedColumns.has(edit.column) && index[edit.column] != null) changed = 1
         droppedColumns.add(edit.column)
         break
 
@@ -59,10 +80,10 @@ export function replay(columns, rows, edits) {
         // Each row may go to a different label, which is how R1 hands back its
         // per-row prediction. A single newValue applies to all of them.
         for (const [row, value] of Object.entries(edit.values ?? {})) {
-          overrides.set(`${row}:${col}`, value)
+          setCell(row, col, value)
         }
         if (edit.newValue != null) {
-          for (const row of edit.rowIndices ?? []) overrides.set(`${row}:${col}`, edit.newValue)
+          for (const row of edit.rowIndices ?? []) setCell(row, col, edit.newValue)
         }
         break
       }
@@ -74,7 +95,7 @@ export function replay(columns, rows, edits) {
         for (let row = 0; row < rows.length; row += 1) {
           if (droppedRows.has(row)) continue
           if (targets.has(normalise(cellAt(row, col)))) {
-            overrides.set(`${row}:${col}`, edit.to)
+            setCell(row, col, edit.to)
           }
         }
         break
@@ -86,7 +107,7 @@ export function replay(columns, rows, edits) {
         const forms = new Set((edit.forms ?? []).map(normalise))
         for (let row = 0; row < rows.length; row += 1) {
           if (droppedRows.has(row)) continue
-          if (forms.has(normalise(cellAt(row, col)))) overrides.set(`${row}:${col}`, '')
+          if (forms.has(normalise(cellAt(row, col)))) setCell(row, col, '')
         }
         break
       }
@@ -97,7 +118,7 @@ export function replay(columns, rows, edits) {
         for (let row = 0; row < rows.length; row += 1) {
           if (droppedRows.has(row)) continue
           if (String(cellAt(row, col) ?? '').trim() === '') {
-            overrides.set(`${row}:${col}`, edit.value)
+            setCell(row, col, edit.value)
           }
         }
         break
@@ -114,7 +135,7 @@ export function replay(columns, rows, edits) {
           if (String(cellAt(row, col) ?? '').trim() !== '') continue
           const key = String(cellAt(row, from) ?? '')
           const value = edit.mapping?.[key]
-          if (value !== undefined) overrides.set(`${row}:${col}`, value)
+          if (value !== undefined) setCell(row, col, value)
         }
         break
       }
@@ -141,7 +162,7 @@ export function replay(columns, rows, edits) {
                   : x - y
           // Floating point makes 4.199999999999999 out of 1.4 * 3. Rounded to a
           // precision no money or count needs to exceed.
-          overrides.set(`${row}:${col}`, String(Math.round(value * 1e6) / 1e6))
+          setCell(row, col, String(Math.round(value * 1e6) / 1e6))
         }
         break
       }
@@ -155,7 +176,7 @@ export function replay(columns, rows, edits) {
           const number = parseNumber(raw)
           // Anything that is not a number is left exactly as it was, rather
           // than being blanked for failing to be one.
-          if (number !== null) overrides.set(`${row}:${col}`, formatNumber(number))
+          if (number !== null) setCell(row, col, formatNumber(number))
         }
         break
       }
@@ -166,7 +187,7 @@ export function replay(columns, rows, edits) {
         for (let row = 0; row < rows.length; row += 1) {
           if (droppedRows.has(row)) continue
           const value = parseDate(cellAt(row, col), edit.dayfirst)
-          if (value !== null) overrides.set(`${row}:${col}`, value)
+          if (value !== null) setCell(row, col, value)
         }
         break
       }
@@ -177,7 +198,7 @@ export function replay(columns, rows, edits) {
         for (let row = 0; row < rows.length; row += 1) {
           if (droppedRows.has(row)) continue
           const value = parseBoolean(cellAt(row, col))
-          if (value !== null) overrides.set(`${row}:${col}`, value ? 'true' : 'false')
+          if (value !== null) setCell(row, col, value ? 'true' : 'false')
         }
         break
       }
@@ -189,7 +210,7 @@ export function replay(columns, rows, edits) {
           if (droppedRows.has(row)) continue
           const value = String(cellAt(row, col) ?? '')
           const stripped = stripMarkup(value)
-          if (stripped !== value) overrides.set(`${row}:${col}`, stripped)
+          if (stripped !== value) setCell(row, col, stripped)
         }
         break
       }
@@ -202,7 +223,7 @@ export function replay(columns, rows, edits) {
           for (let col = 0; col < columns.length; col += 1) {
             const value = String(cellAt(row, col) ?? '')
             const stripped = stripInvisible(value)
-            if (stripped !== value) overrides.set(`${row}:${col}`, stripped)
+            if (stripped !== value) setCell(row, col, stripped)
           }
         }
         break
@@ -214,7 +235,7 @@ export function replay(columns, rows, edits) {
           for (let col = 0; col < columns.length; col += 1) {
             const value = String(cellAt(row, col) ?? '')
             const trimmed = value.trim()
-            if (trimmed !== value) overrides.set(`${row}:${col}`, trimmed)
+            if (trimmed !== value) setCell(row, col, trimmed)
           }
         }
         break
@@ -228,7 +249,7 @@ export function replay(columns, rows, edits) {
         for (let row = 0; row < rows.length; row += 1) {
           if (droppedRows.has(row)) continue
           const key = JSON.stringify(live.map((col) => cellAt(row, col)))
-          if (seen.has(key)) droppedRows.add(row)
+          if (seen.has(key)) dropRow(row)
           else seen.add(key)
         }
         break
@@ -237,6 +258,7 @@ export function replay(columns, rows, edits) {
       default:
         break
     }
+    applied.push({ op: edit.op, column: edit.column ?? null, changed })
   }
 
   const keptColumns = columns.filter((name) => !droppedColumns.has(name))
@@ -249,42 +271,55 @@ export function replay(columns, rows, edits) {
     sourceRows.push(row)
   }
 
-  return { columns: keptColumns, rows: keptRows, sourceRows, droppedRows, droppedColumns, cellAt }
+  return {
+    columns: keptColumns,
+    rows: keptRows,
+    sourceRows,
+    droppedRows,
+    droppedColumns,
+    cellAt,
+    applied,
+  }
 }
 
-export function describe(edit) {
-  const n = edit.rowIndices?.length ?? Object.keys(edit.values ?? {}).length
+export function describe(edit, changed) {
+  // `changed` is what replay measured. Without it these fall back to what the
+  // edit asked for, which is the right thing to say before it has run.
+  const n = changed ?? edit.rowIndices?.length ?? Object.keys(edit.values ?? {}).length
+  const cells = changed == null ? '' : ` (${changed.toLocaleString()} cells)`
   switch (edit.op) {
     case DROP_ROWS:
-      return `dropped ${n} rows`
+      return `dropped ${n.toLocaleString()} rows`
     case DEDUPE:
-      return 'removed duplicate rows'
+      return changed == null
+        ? 'removed duplicate rows'
+        : `removed ${changed.toLocaleString()} duplicate rows`
     case RELABEL:
-      return `relabelled ${n} rows in '${edit.column}'`
+      return `relabelled ${n.toLocaleString()} rows in '${edit.column}'`
     case NORMALIZE:
-      return `normalised ${edit.from.length} spellings in '${edit.column}'`
+      return `normalised ${edit.from.length} spellings in '${edit.column}'${cells}`
     case DROP_COLUMN:
       return `dropped column '${edit.column}'`
     case BLANK_VALUES:
-      return `blanked ${edit.forms.map((f) => `'${f}'`).join(' and ')} in '${edit.column}'`
+      return `blanked ${edit.forms.map((f) => `'${f}'`).join(' and ')} in '${edit.column}'${cells}`
     case FILL_MISSING:
-      return `filled the gaps in '${edit.column}' with '${edit.value}'`
+      return `filled ${changed == null ? 'the gaps' : `${changed.toLocaleString()} gaps`} in '${edit.column}' with '${edit.value}'`
     case FILL_FROM_COLUMN:
-      return `filled '${edit.column}' from '${edit.source}'`
+      return `filled '${edit.column}' from '${edit.source}'${cells}`
     case FILL_FROM_FORMULA:
-      return `computed the missing '${edit.column}' from '${edit.left}' and '${edit.right}'`
+      return `computed the missing '${edit.column}' from '${edit.left}' and '${edit.right}'${cells}`
     case TRIM:
-      return 'trimmed surrounding whitespace'
+      return `trimmed surrounding whitespace${cells}`
     case REFORMAT_NUMBER:
-      return `read '${edit.column}' as numbers`
+      return `read '${edit.column}' as numbers${cells}`
     case REFORMAT_DATE:
-      return `rewrote the dates in '${edit.column}' as YYYY-MM-DD`
+      return `rewrote the dates in '${edit.column}' as YYYY-MM-DD${cells}`
     case NORMALIZE_BOOLEAN:
-      return `wrote '${edit.column}' consistently as true and false`
+      return `wrote '${edit.column}' consistently as true and false${cells}`
     case STRIP_MARKUP:
-      return `took the HTML out of '${edit.column}'`
+      return `took the HTML out of '${edit.column}'${cells}`
     case STRIP_INVISIBLE:
-      return 'removed the zero-width characters'
+      return `removed the zero-width characters${cells}`
     default:
       return edit.op
   }

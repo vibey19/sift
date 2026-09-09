@@ -14,6 +14,7 @@ import {
   STRIP_INVISIBLE,
   STRIP_MARKUP,
   TRIM,
+  describe,
   replay,
 } from './edits.js'
 
@@ -202,4 +203,53 @@ test('a value with nothing wrong with it is left byte for byte alone', () => {
     { op: STRIP_INVISIBLE },
   ])
   assert.deepEqual(out.rows, original)
+})
+
+// --- what an edit actually did, rather than what it was asked to do ----------
+
+test('replay reports the cells each edit changed', () => {
+  const out = replay(
+    ['plan', 'note'],
+    [['Premium', 'a'], ['premium', 'b'], [' Premium ', 'c'], ['Premium', 'd']],
+    [
+      { op: NORMALIZE, column: 'plan', from: ['Premium', 'premium'], to: 'Premium' },
+      { op: TRIM },
+    ],
+  )
+  // Two rows spell it differently; the third differs only by padding, which
+  // normalise already settles, so trim finds nothing left to do on that column.
+  assert.equal(out.applied[0].changed, 2)
+  assert.equal(out.applied[1].changed, 0)
+})
+
+test('a later fix reports what it did, not what the check estimated', () => {
+  // The case the estimate gets wrong: the check counted two blank cells, then
+  // blanking the sentinels made a third, and the fill touched all three.
+  const out = replay(
+    ['city'],
+    [['London'], [''], ['n/a'], ['']],
+    [
+      { op: BLANK_VALUES, column: 'city', forms: ['n/a'] },
+      { op: FILL_MISSING, column: 'city', value: 'Unknown' },
+    ],
+  )
+  assert.equal(out.applied[0].changed, 1)
+  assert.equal(out.applied[1].changed, 3)
+  assert.match(describe(out.applied[1] && { op: 'fill_missing', column: 'city', value: 'Unknown' }, 3),
+    /filled 3 gaps/)
+})
+
+test('an edit that changes nothing says so', () => {
+  const out = replay(['a'], [['x'], ['y']], [{ op: NORMALIZE, column: 'a', from: ['z'], to: 'w' }])
+  assert.equal(out.applied[0].changed, 0)
+})
+
+test('dropping rows counts only the rows it dropped', () => {
+  const out = replay(
+    ['a'],
+    [['x'], ['x'], ['y']],
+    [{ op: DEDUPE }, { op: DROP_ROWS, rowIndices: [1, 2] }],
+  )
+  assert.equal(out.applied[0].changed, 1) // row 1 was the duplicate
+  assert.equal(out.applied[1].changed, 1) // row 1 was already gone
 })

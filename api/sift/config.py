@@ -110,9 +110,11 @@ TFIDF_NGRAM_RANGE = (1, 2)
 SVD_COMPONENTS = 128
 
 # --- D2 near-duplicate rows -------------------------------------------------
-# Exact cosine similarity is quadratic. Past this it needs approximate nearest
-# neighbours, and below it exact is faster than building the index would be.
-NEAR_DUP_MAX_ROWS = 20_000
+# There is no row cap. There was one, of 20,000, carried over from the cosine
+# design this check replaced, where the comparison really was quadratic. The
+# hashing that replaced it is linear, and NEAR_DUP_MAX_GROUP below bounds the
+# pathological case, so a fifty thousand row file is a second and a half. The
+# cap was refusing to run a check that would have finished.
 NEAR_DUP_CHUNK = 1_000
 
 # --- C10 single-feature leakage ---------------------------------------------

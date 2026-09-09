@@ -288,21 +288,6 @@ def _candidate_pairs(
 def _near_duplicates(df: pd.DataFrame, profiles: list[dict], split_column: str | None) -> tuple[list[dict], list[dict]]:
     if len(df) < 2:
         return [], []
-    if len(df) > config.NEAR_DUP_MAX_ROWS:
-        return [
-            make_issue(
-                id="near_duplicates_skipped", check="D2_near_duplicates", scope="dataset",
-                severity=LOW,
-                title=f"Near-duplicate detection skipped above {config.NEAR_DUP_MAX_ROWS:,} rows",
-                detail=(
-                    f"This file has {len(df):,} rows. Past {config.NEAR_DUP_MAX_ROWS:,} the "
-                    "pairwise step needs approximate nearest neighbours rather than a full "
-                    "comparison. Exact duplicates were still checked."
-                ),
-                suggested_action="none",
-            )
-        ], [{"check": "D2_near_duplicates", "reason": "row count above the cap"}]
-
     compare_cols = [c for c in df.columns if c != split_column]
     pairs = _candidate_pairs(df, profiles, compare_cols)
     exact = set(df.index[df.duplicated(subset=compare_cols, keep=False)])
@@ -352,10 +337,9 @@ def _train_test_overlap(
     exact_rows = sides.index[sides["key"].map(sides.groupby("key")["split"].nunique()) > 1]
 
     near_rows: set = set()
-    if len(df) <= config.NEAR_DUP_MAX_ROWS:
-        for a, b in _candidate_pairs(df, profiles, feature_cols):
-            if split.at[a] != split.at[b]:
-                near_rows.update((a, b))
+    for a, b in _candidate_pairs(df, profiles, feature_cols):
+        if split.at[a] != split.at[b]:
+            near_rows.update((a, b))
 
     rows = sorted(set(exact_rows) | near_rows)
     if not rows:

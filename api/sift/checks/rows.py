@@ -36,20 +36,40 @@ def run(
         return _skip(f"fewer than {config.MISLABEL_MIN_ROWS} rows")
 
     labels = df[label_column].where(~prof.missing_mask(df[label_column]))
-    counts = labels.value_counts()
+    # The model is given the label with its spelling settled first. A column
+    # holding "positive", "Positive" and " positive" has three classes as far
+    # as the fold splitter is concerned, and the model is asked to tell them
+    # apart using features that cannot possibly say which spelling a row used.
+    # It spends its whole budget failing at that, and then reports every row
+    # whose spelling it guessed wrong as a probable mislabel. On the reviews
+    # sample that was 67 false flags out of 97, and eleven seconds of the
+    # sixteen the audit took. C5 reports the spellings; this check is about
+    # whether the row is in the right class.
+    canonical = labels.where(labels.isna(), labels.map(prof.normalise_text))
+    counts = canonical.value_counts()
     if len(counts) < 2:
         return _skip("the label has fewer than two classes")
 
     # Stratified k-fold cannot put a member of a small class in every fold. It
     # fails quietly, so these are removed and named rather than left to break.
     too_small = counts[counts < config.MIN_CLASS_MEMBERS_FOR_CV]
-    keep = labels.notna() & ~labels.isin(too_small.index)
-    if keep.sum() < config.MISLABEL_MIN_ROWS or labels[keep].nunique() < 2:
+    keep = canonical.notna() & ~canonical.isin(too_small.index)
+    if keep.sum() < config.MISLABEL_MIN_ROWS or canonical[keep].nunique() < 2:
         return _skip("too few rows once classes below the fold count were dropped")
 
     positions = np.flatnonzero(keep.to_numpy())
     X = encoded.X[positions]
-    y = labels.to_numpy()[positions].astype(str)
+    y = canonical.to_numpy()[positions].astype(str)
+    # Predictions come back as the settled spelling, so each one is named again
+    # with the spelling that class most often uses in the file. Suggesting a row
+    # be relabelled to something the column has never contained would be a
+    # strange thing to offer.
+    spelling = (
+        pd.DataFrame({"canonical": canonical[keep], "raw": labels[keep]})
+        .groupby("canonical")["raw"]
+        .agg(lambda values: values.value_counts().index[0])
+        .to_dict()
+    )
 
     proba = cross_val_predict(
         HistGradientBoostingClassifier(random_state=0),
@@ -99,11 +119,11 @@ def run(
             "listening to. The most confident disagreements are ranked first."
         )
     if dropped:
-        names = ", ".join(f"'{k}' ({v} rows)" for k, v in dropped.items())
+        names = ", ".join(f"'{spelling.get(k, k)}' ({v} rows)" for k, v in dropped.items())
         detail += f" Classes too small to cross-validate were left out: {names}."
 
     given = labels.to_numpy()[positions][flagged][order]
-    guessed = predicted[flagged][order]
+    guessed = np.array([spelling.get(c, c) for c in predicted[flagged][order]])
     evidence_rows = [
         {"index": int(i), "given": str(g), "predicted": str(pr), "noise_score": round(float(nz), 4)}
         for i, g, pr, nz in zip(rows[:200], given[:200], guessed[:200], noise[:200])
