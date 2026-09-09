@@ -1,0 +1,618 @@
+{
+  "columns": [
+    {
+      "inferred_type": "id_like",
+      "missing_fraction": 0.0,
+      "missing_tokens": {},
+      "n_missing": 0,
+      "n_present": 3075,
+      "n_unique": 3000,
+      "name": "customer_id",
+      "sample_values": [
+        "C000000",
+        "C000001",
+        "C000002",
+        "C000003",
+        "C000004"
+      ],
+      "unique_share": 0.975609756097561
+    },
+    {
+      "inferred_type": "datetime",
+      "missing_fraction": 0.0026016260162601626,
+      "missing_tokens": {},
+      "n_missing": 8,
+      "n_present": 3067,
+      "n_unique": 72,
+      "name": "signup_date",
+      "sample_values": [
+        "2024-05-02",
+        "2022-12-09",
+        "2020-06-22",
+        "2020-12-19",
+        "2023-03-09"
+      ],
+      "unique_share": 0.023475709162047602
+    },
+    {
+      "inferred_type": "constant",
+      "missing_fraction": 0.0,
+      "missing_tokens": {},
+      "n_missing": 0,
+      "n_present": 3075,
+      "n_unique": 1,
+      "name": "region",
+      "sample_values": [
+        "EU"
+      ],
+      "top_values": {
+        "EU": 3075
+      },
+      "unique_share": 0.0003252032520325203
+    },
+    {
+      "inferred_type": "categorical",
+      "missing_fraction": 0.0026016260162601626,
+      "missing_tokens": {},
+      "n_missing": 8,
+      "n_present": 3067,
+      "n_unique": 7,
+      "name": "plan",
+      "sample_values": [
+        "Basic",
+        "Standard",
+        "Premium",
+        "PREMIUM",
+        "premium"
+      ],
+      "top_values": {
+        " Premium ": 30,
+        "Basic": 1293,
+        "Enterprise": 3,
+        "PREMIUM": 32,
+        "Premium": 460,
+        "Standard": 1218,
+        "premium": 31
+      },
+      "unique_share": 0.0022823606129768505
+    },
+    {
+      "inferred_type": "categorical",
+      "missing_fraction": 0.0026016260162601626,
+      "missing_tokens": {},
+      "n_missing": 8,
+      "n_present": 3067,
+      "n_unique": 3,
+      "name": "contract",
+      "sample_values": [
+        "Monthly",
+        "Annual",
+        "Two year"
+      ],
+      "top_values": {
+        "Annual": 944,
+        "Monthly": 1663,
+        "Two year": 460
+      },
+      "unique_share": 0.00097815454841865
+    },
+    {
+      "inferred_type": "numeric",
+      "missing_fraction": 0.0,
+      "missing_tokens": {},
+      "n_missing": 0,
+      "n_present": 3075,
+      "n_unique": 81,
+      "name": "tenure_months",
+      "sample_values": [
+        "1",
+        "18",
+        "48",
+        "42",
+        "15"
+      ],
+      "stats": {
+        "max": 6900.0,
+        "mean": 45.31479674796748,
+        "median": 37.0,
+        "min": 1.0
+      },
+      "unique_share": 0.026341463414634145
+    },
+    {
+      "inferred_type": "numeric",
+      "missing_fraction": 0.0026016260162601626,
+      "missing_tokens": {},
+      "n_missing": 8,
+      "n_present": 3067,
+      "n_unique": 2469,
+      "name": "monthly_charges",
+      "sample_values": [
+        "65.05",
+        "108.53",
+        "47.39",
+        "87.03",
+        "78.75"
+      ],
+      "stats": {
+        "max": 150.0,
+        "mean": 70.30613628953374,
+        "median": 69.7,
+        "min": 20.0
+      },
+      "unique_share": 0.805021193348549
+    },
+    {
+      "inferred_type": "numeric",
+      "missing_fraction": 0.0026016260162601626,
+      "missing_tokens": {},
+      "n_missing": 8,
+      "n_present": 3067,
+      "n_unique": 2421,
+      "name": "monthly_charges_eur",
+      "sample_values": [
+        "59.85",
+        "99.85",
+        "43.6",
+        "80.07",
+        "72.45"
+      ],
+      "stats": {
+        "max": 138.0,
+        "mean": 64.68163351809586,
+        "median": 64.12,
+        "min": 18.4
+      },
+      "unique_share": 0.7893707205738507
+    },
+    {
+      "inferred_type": "numeric",
+      "missing_fraction": 0.0026016260162601626,
+      "missing_tokens": {},
+      "n_missing": 8,
+      "n_present": 3067,
+      "n_unique": 8,
+      "name": "support_tickets",
+      "sample_values": [
+        "2.0",
+        "1.0",
+        "0.0",
+        "3.0",
+        "4.0"
+      ],
+      "stats": {
+        "max": 8.0,
+        "mean": 1.1907401369416368,
+        "median": 1.0,
+        "min": 0.0
+      },
+      "unique_share": 0.0026084121291164004
+    },
+    {
+      "inferred_type": "numeric",
+      "missing_fraction": 0.03609756097560975,
+      "missing_tokens": {
+        "n/a": 38,
+        "none": 37,
+        "unknown": 28
+      },
+      "n_missing": 111,
+      "n_present": 2964,
+      "n_unique": 30,
+      "name": "discount_pct",
+      "sample_values": [
+        "3",
+        "20",
+        "16",
+        "19",
+        "28"
+      ],
+      "stats": {
+        "max": 29.0,
+        "mean": 14.553306342780028,
+        "median": 15.0,
+        "min": 0.0
+      },
+      "unique_share": 0.010121457489878543
+    },
+    {
+      "inferred_type": "id_like",
+      "missing_fraction": 0.35252032520325205,
+      "missing_tokens": {},
+      "n_missing": 1084,
+      "n_present": 1991,
+      "n_unique": 1946,
+      "name": "email",
+      "sample_values": [
+        "user2@example.com",
+        "user3@example.com",
+        "user7@example.com",
+        "user8@example.com",
+        "user9@example.com"
+      ],
+      "unique_share": 0.9773982923154194
+    },
+    {
+      "inferred_type": "categorical",
+      "missing_fraction": 0.0,
+      "missing_tokens": {},
+      "n_missing": 0,
+      "n_present": 3075,
+      "n_unique": 2,
+      "name": "split",
+      "sample_values": [
+        "test",
+        "train"
+      ],
+      "top_values": {
+        "test": 777,
+        "train": 2298
+      },
+      "unique_share": 0.0006504065040650406
+    },
+    {
+      "inferred_type": "boolean",
+      "missing_fraction": 0.0,
+      "missing_tokens": {},
+      "n_missing": 0,
+      "n_present": 3075,
+      "n_unique": 2,
+      "name": "churned",
+      "sample_values": [
+        "1",
+        "0"
+      ],
+      "top_values": {
+        "0": 1730,
+        "1": 1345
+      },
+      "unique_share": 0.0006504065040650406
+    },
+    {
+      "inferred_type": "categorical",
+      "missing_fraction": 0.5632520325203252,
+      "missing_tokens": {},
+      "n_missing": 1732,
+      "n_present": 1343,
+      "n_unique": 4,
+      "name": "cancellation_reason",
+      "sample_values": [
+        "competitor",
+        "price",
+        "moved",
+        "service"
+      ],
+      "top_values": {
+        "competitor": 304,
+        "moved": 343,
+        "price": 363,
+        "service": 333
+      },
+      "unique_share": 0.0029784065524944155
+    }
+  ],
+  "n_cols": 14,
+  "n_rows": 3075,
+  "preview": [
+    {
+      "cancellation_reason": "competitor",
+      "churned": "1",
+      "contract": "Monthly",
+      "customer_id": "C000000",
+      "discount_pct": "3",
+      "email": "",
+      "monthly_charges": "65.05",
+      "monthly_charges_eur": "59.85",
+      "plan": "Basic",
+      "region": "EU",
+      "signup_date": "2024-05-02",
+      "split": "test",
+      "support_tickets": "2.0",
+      "tenure_months": "1"
+    },
+    {
+      "cancellation_reason": "price",
+      "churned": "1",
+      "contract": "Monthly",
+      "customer_id": "C000001",
+      "discount_pct": "20",
+      "email": "",
+      "monthly_charges": "108.53",
+      "monthly_charges_eur": "99.85",
+      "plan": "Basic",
+      "region": "EU",
+      "signup_date": "2022-12-09",
+      "split": "test",
+      "support_tickets": "1.0",
+      "tenure_months": "18"
+    },
+    {
+      "cancellation_reason": "",
+      "churned": "0",
+      "contract": "Annual",
+      "customer_id": "C000002",
+      "discount_pct": "16",
+      "email": "user2@example.com",
+      "monthly_charges": "47.39",
+      "monthly_charges_eur": "43.6",
+      "plan": "Standard",
+      "region": "EU",
+      "signup_date": "2020-06-22",
+      "split": "train",
+      "support_tickets": "0.0",
+      "tenure_months": "48"
+    },
+    {
+      "cancellation_reason": "",
+      "churned": "0",
+      "contract": "Monthly",
+      "customer_id": "C000003",
+      "discount_pct": "19",
+      "email": "user3@example.com",
+      "monthly_charges": "87.03",
+      "monthly_charges_eur": "80.07",
+      "plan": "Standard",
+      "region": "EU",
+      "signup_date": "2020-12-19",
+      "split": "train",
+      "support_tickets": "2.0",
+      "tenure_months": "42"
+    },
+    {
+      "cancellation_reason": "competitor",
+      "churned": "1",
+      "contract": "Monthly",
+      "customer_id": "C000004",
+      "discount_pct": "28",
+      "email": "",
+      "monthly_charges": "78.75",
+      "monthly_charges_eur": "72.45",
+      "plan": "Premium",
+      "region": "EU",
+      "signup_date": "2023-03-09",
+      "split": "test",
+      "support_tickets": "3.0",
+      "tenure_months": "15"
+    },
+    {
+      "cancellation_reason": "",
+      "churned": "0",
+      "contract": "Annual",
+      "customer_id": "C000005",
+      "discount_pct": "1",
+      "email": "",
+      "monthly_charges": "91.85",
+      "monthly_charges_eur": "84.5",
+      "plan": "Basic",
+      "region": "EU",
+      "signup_date": "2021-03-19",
+      "split": "train",
+      "support_tickets": "0.0",
+      "tenure_months": "39"
+    },
+    {
+      "cancellation_reason": "moved",
+      "churned": "1",
+      "contract": "Monthly",
+      "customer_id": "C000006",
+      "discount_pct": "20",
+      "email": "",
+      "monthly_charges": "114.9",
+      "monthly_charges_eur": "105.71",
+      "plan": "Basic",
+      "region": "EU",
+      "signup_date": "2023-02-07",
+      "split": "test",
+      "support_tickets": "2.0",
+      "tenure_months": "16"
+    },
+    {
+      "cancellation_reason": "",
+      "churned": "0",
+      "contract": "Two year",
+      "customer_id": "C000007",
+      "discount_pct": "0",
+      "email": "user7@example.com",
+      "monthly_charges": "86.85",
+      "monthly_charges_eur": "79.9",
+      "plan": "Standard",
+      "region": "EU",
+      "signup_date": "2020-08-21",
+      "split": "train",
+      "support_tickets": "0.0",
+      "tenure_months": "46"
+    },
+    {
+      "cancellation_reason": "",
+      "churned": "0",
+      "contract": "Annual",
+      "customer_id": "C000008",
+      "discount_pct": "17",
+      "email": "user8@example.com",
+      "monthly_charges": "20.0",
+      "monthly_charges_eur": "18.4",
+      "plan": "Standard",
+      "region": "EU",
+      "signup_date": "2022-10-10",
+      "split": "train",
+      "support_tickets": "1.0",
+      "tenure_months": "20"
+    },
+    {
+      "cancellation_reason": "",
+      "churned": "0",
+      "contract": "Monthly",
+      "customer_id": "C000009",
+      "discount_pct": "10",
+      "email": "user9@example.com",
+      "monthly_charges": "98.63",
+      "monthly_charges_eur": "90.74",
+      "plan": "Premium",
+      "region": "EU",
+      "signup_date": "2018-11-30",
+      "split": "test",
+      "support_tickets": "0.0",
+      "tenure_months": "67"
+    },
+    {
+      "cancellation_reason": "competitor",
+      "churned": "1",
+      "contract": "Monthly",
+      "customer_id": "C000010",
+      "discount_pct": "25",
+      "email": "user10@example.com",
+      "monthly_charges": "78.21",
+      "monthly_charges_eur": "71.95",
+      "plan": "Premium",
+      "region": "EU",
+      "signup_date": "2023-12-04",
+      "split": "test",
+      "support_tickets": "0.0",
+      "tenure_months": "6"
+    },
+    {
+      "cancellation_reason": "service",
+      "churned": "1",
+      "contract": "Two year",
+      "customer_id": "C000011",
+      "discount_pct": "6",
+      "email": "user11@example.com",
+      "monthly_charges": "60.51",
+      "monthly_charges_eur": "55.67",
+      "plan": "Standard",
+      "region": "EU",
+      "signup_date": "2023-06-07",
+      "split": "train",
+      "support_tickets": "0.0",
+      "tenure_months": "12"
+    },
+    {
+      "cancellation_reason": "",
+      "churned": "0",
+      "contract": "Monthly",
+      "customer_id": "C000012",
+      "discount_pct": "9",
+      "email": "user12@example.com",
+      "monthly_charges": "73.55",
+      "monthly_charges_eur": "67.67",
+      "plan": "Basic",
+      "region": "EU",
+      "signup_date": "2019-04-29",
+      "split": "train",
+      "support_tickets": "0.0",
+      "tenure_months": "62"
+    },
+    {
+      "cancellation_reason": "",
+      "churned": "0",
+      "contract": "Two year",
+      "customer_id": "C000013",
+      "discount_pct": "10",
+      "email": "",
+      "monthly_charges": "89.39",
+      "monthly_charges_eur": "82.24",
+      "plan": "Basic",
+      "region": "EU",
+      "signup_date": "2018-10-31",
+      "split": "train",
+      "support_tickets": "0.0",
+      "tenure_months": "68"
+    },
+    {
+      "cancellation_reason": "",
+      "churned": "0",
+      "contract": "Monthly",
+      "customer_id": "C000014",
+      "discount_pct": "20",
+      "email": "user14@example.com",
+      "monthly_charges": "21.24",
+      "monthly_charges_eur": "19.54",
+      "plan": "PREMIUM",
+      "region": "EU",
+      "signup_date": "2020-07-22",
+      "split": "test",
+      "support_tickets": "3.0",
+      "tenure_months": "47"
+    },
+    {
+      "cancellation_reason": "",
+      "churned": "0",
+      "contract": "Monthly",
+      "customer_id": "C000015",
+      "discount_pct": "11",
+      "email": "user15@example.com",
+      "monthly_charges": "74.42",
+      "monthly_charges_eur": "68.47",
+      "plan": "Basic",
+      "region": "EU",
+      "signup_date": "2021-12-14",
+      "split": "train",
+      "support_tickets": "0.0",
+      "tenure_months": "30"
+    },
+    {
+      "cancellation_reason": "",
+      "churned": "0",
+      "contract": "Monthly",
+      "customer_id": "C000016",
+      "discount_pct": "14",
+      "email": "",
+      "monthly_charges": "93.64",
+      "monthly_charges_eur": "86.15",
+      "plan": "Basic",
+      "region": "EU",
+      "signup_date": "2018-08-02",
+      "split": "train",
+      "support_tickets": "2.0",
+      "tenure_months": "71"
+    },
+    {
+      "cancellation_reason": "moved",
+      "churned": "1",
+      "contract": "Annual",
+      "customer_id": "C000017",
+      "discount_pct": "3",
+      "email": "",
+      "monthly_charges": "99.97",
+      "monthly_charges_eur": "91.97",
+      "plan": "Standard",
+      "region": "EU",
+      "signup_date": "2021-08-16",
+      "split": "train",
+      "support_tickets": "1.0",
+      "tenure_months": "34"
+    },
+    {
+      "cancellation_reason": "moved",
+      "churned": "1",
+      "contract": "Monthly",
+      "customer_id": "C000018",
+      "discount_pct": "28",
+      "email": "user18@example.com",
+      "monthly_charges": "89.6",
+      "monthly_charges_eur": "82.43",
+      "plan": "Premium",
+      "region": "EU",
+      "signup_date": "2024-01-03",
+      "split": "train",
+      "support_tickets": "1.0",
+      "tenure_months": "5"
+    },
+    {
+      "cancellation_reason": "price",
+      "churned": "1",
+      "contract": "Monthly",
+      "customer_id": "C000019",
+      "discount_pct": "15",
+      "email": "user19@example.com",
+      "monthly_charges": "100.8",
+      "monthly_charges_eur": "92.74",
+      "plan": "Basic",
+      "region": "EU",
+      "signup_date": "2022-02-12",
+      "split": "test",
+      "support_tickets": "1.0",
+      "tenure_months": "28"
+    }
+  ]
+}

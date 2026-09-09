@@ -1,0 +1,1038 @@
+{
+  "issues": [
+    {
+      "check": "R1_mislabels",
+      "column": "sentiment",
+      "detail": "93 rows carry a label the model disagrees with, having never seen those rows during training. Cross-validated accuracy is 0.93, so the model is worth listening to. The most confident disagreements are ranked first. Classes too small to cross-validate were left out: ' neutral' (4 rows).",
+      "evidence": {
+        "cv_accuracy": 0.9296515450361604,
+        "dropped_classes": {
+          " neutral": 4
+        },
+        "low_confidence": false,
+        "rows": [
+          {
+            "given": "positive",
+            "index": 89,
+            "noise_score": 1.0,
+            "predicted": "neutral"
+          },
+          {
+            "given": "neutral",
+            "index": 921,
+            "noise_score": 1.0,
+            "predicted": "negative"
+          },
+          {
+            "given": "positive",
+            "index": 702,
+            "noise_score": 1.0,
+            "predicted": "neutral"
+          },
+          {
+            "given": "negative",
+            "index": 1023,
+            "noise_score": 1.0,
+            "predicted": "positive"
+          },
+          {
+            "given": "Neutral",
+            "index": 163,
+            "noise_score": 1.0,
+            "predicted": "neutral"
+          },
+          {
+            "given": "Negative",
+            "index": 398,
+            "noise_score": 1.0,
+            "predicted": "negative"
+          },
+          {
+            "given": " positive",
+            "index": 988,
+            "noise_score": 1.0,
+            "predicted": "positive"
+          },
+          {
+            "given": "positive",
+            "index": 1120,
+            "noise_score": 1.0,
+            "predicted": "neutral"
+          },
+          {
+            "given": "Negative",
+            "index": 1164,
+            "noise_score": 1.0,
+            "predicted": "negative"
+          },
+          {
+            "given": "negative",
+            "index": 633,
+            "noise_score": 1.0,
+            "predicted": "positive"
+          },
+          {
+            "given": "positive",
+            "index": 107,
+            "noise_score": 1.0,
+            "predicted": "neutral"
+          },
+          {
+            "given": " positive",
+            "index": 1248,
+            "noise_score": 1.0,
+            "predicted": "positive"
+          },
+          {
+            "given": "Neutral",
+            "index": 690,
+            "noise_score": 1.0,
+            "predicted": "neutral"
+          },
+          {
+            "given": " negative",
+            "index": 413,
+            "noise_score": 1.0,
+            "predicted": "negative"
+          },
+          {
+            "given": " positive",
+            "index": 650,
+            "noise_score": 1.0,
+            "predicted": "positive"
+          },
+          {
+            "given": "Negative",
+            "index": 679,
+            "noise_score": 1.0,
+            "predicted": "negative"
+          },
+          {
+            "given": "Positive",
+            "index": 1116,
+            "noise_score": 1.0,
+            "predicted": "positive"
+          },
+          {
+            "given": "Positive",
+            "index": 724,
+            "noise_score": 1.0,
+            "predicted": "positive"
+          },
+          {
+            "given": "negative",
+            "index": 640,
+            "noise_score": 1.0,
+            "predicted": "positive"
+          },
+          {
+            "given": " positive",
+            "index": 313,
+            "noise_score": 1.0,
+            "predicted": "positive"
+          },
+          {
+            "given": " positive",
+            "index": 706,
+            "noise_score": 1.0,
+            "predicted": "positive"
+          },
+          {
+            "given": " negative",
+            "index": 474,
+            "noise_score": 1.0,
+            "predicted": "negative"
+          },
+          {
+            "given": " negative",
+            "index": 84,
+            "noise_score": 1.0,
+            "predicted": "negative"
+          },
+          {
+            "given": " positive",
+            "index": 261,
+            "noise_score": 1.0,
+            "predicted": "positive"
+          },
+          {
+            "given": "neutral",
+            "index": 1242,
+            "noise_score": 1.0,
+            "predicted": "negative"
+          },
+          {
+            "given": " positive",
+            "index": 53,
+            "noise_score": 1.0,
+            "predicted": "positive"
+          },
+          {
+            "given": "Positive",
+            "index": 226,
+            "noise_score": 1.0,
+            "predicted": "positive"
+          },
+          {
+            "given": "Positive",
+            "index": 11,
+            "noise_score": 1.0,
+            "predicted": "positive"
+          },
+          {
+            "given": "Negative",
+            "index": 220,
+            "noise_score": 1.0,
+            "predicted": "negative"
+          },
+          {
+            "given": "negative",
+            "index": 1191,
+            "noise_score": 1.0,
+            "predicted": "positive"
+          },
+          {
+            "given": "negative",
+            "index": 72,
+            "noise_score": 1.0,
+            "predicted": "positive"
+          },
+          {
+            "given": "Positive",
+            "index": 1058,
+            "noise_score": 1.0,
+            "predicted": "positive"
+          },
+          {
+            "given": "neutral",
+            "index": 238,
+            "noise_score": 1.0,
+            "predicted": "negative"
+          },
+          {
+            "given": "Positive",
+            "index": 362,
+            "noise_score": 1.0,
+            "predicted": "positive"
+          },
+          {
+            "given": "neutral",
+            "index": 1487,
+            "noise_score": 1.0,
+            "predicted": "negative"
+          },
+          {
+            "given": "negative",
+            "index": 1229,
+            "noise_score": 1.0,
+            "predicted": "positive"
+          },
+          {
+            "given": "negative",
+            "index": 304,
+            "noise_score": 1.0,
+            "predicted": "positive"
+          },
+          {
+            "given": "Neutral",
+            "index": 1095,
+            "noise_score": 1.0,
+            "predicted": "neutral"
+          },
+          {
+            "given": "Positive",
+            "index": 1215,
+            "noise_score": 1.0,
+            "predicted": "positive"
+          },
+          {
+            "given": "Positive",
+            "index": 1055,
+            "noise_score": 1.0,
+            "predicted": "positive"
+          },
+          {
+            "given": "Positive",
+            "index": 737,
+            "noise_score": 1.0,
+            "predicted": "positive"
+          },
+          {
+            "given": "Negative",
+            "index": 1152,
+            "noise_score": 1.0,
+            "predicted": "negative"
+          },
+          {
+            "given": " positive",
+            "index": 1382,
+            "noise_score": 1.0,
+            "predicted": "positive"
+          },
+          {
+            "given": "Positive",
+            "index": 775,
+            "noise_score": 1.0,
+            "predicted": "positive"
+          },
+          {
+            "given": "Neutral",
+            "index": 915,
+            "noise_score": 1.0,
+            "predicted": "neutral"
+          },
+          {
+            "given": "Positive",
+            "index": 776,
+            "noise_score": 1.0,
+            "predicted": "positive"
+          },
+          {
+            "given": "Positive",
+            "index": 93,
+            "noise_score": 1.0,
+            "predicted": "positive"
+          },
+          {
+            "given": " positive",
+            "index": 955,
+            "noise_score": 1.0,
+            "predicted": "positive"
+          },
+          {
+            "given": " positive",
+            "index": 115,
+            "noise_score": 1.0,
+            "predicted": "positive"
+          },
+          {
+            "given": " negative",
+            "index": 831,
+            "noise_score": 1.0,
+            "predicted": "negative"
+          },
+          {
+            "given": "Neutral",
+            "index": 1237,
+            "noise_score": 1.0,
+            "predicted": "neutral"
+          },
+          {
+            "given": "neutral",
+            "index": 605,
+            "noise_score": 1.0,
+            "predicted": "negative"
+          },
+          {
+            "given": "Positive",
+            "index": 1337,
+            "noise_score": 1.0,
+            "predicted": "positive"
+          },
+          {
+            "given": "Positive",
+            "index": 790,
+            "noise_score": 1.0,
+            "predicted": "positive"
+          },
+          {
+            "given": "positive",
+            "index": 65,
+            "noise_score": 1.0,
+            "predicted": "neutral"
+          },
+          {
+            "given": " positive",
+            "index": 10,
+            "noise_score": 0.9999,
+            "predicted": "positive"
+          },
+          {
+            "given": " positive",
+            "index": 1419,
+            "noise_score": 0.9999,
+            "predicted": "positive"
+          },
+          {
+            "given": "negative",
+            "index": 1496,
+            "noise_score": 0.9999,
+            "predicted": "positive"
+          },
+          {
+            "given": "negative",
+            "index": 1492,
+            "noise_score": 0.9999,
+            "predicted": "positive"
+          },
+          {
+            "given": "positive",
+            "index": 1007,
+            "noise_score": 0.9999,
+            "predicted": "neutral"
+          },
+          {
+            "given": "positive",
+            "index": 1430,
+            "noise_score": 0.9999,
+            "predicted": "neutral"
+          },
+          {
+            "given": "negative",
+            "index": 494,
+            "noise_score": 0.9999,
+            "predicted": "positive"
+          },
+          {
+            "given": "Positive",
+            "index": 1287,
+            "noise_score": 0.9999,
+            "predicted": "positive"
+          },
+          {
+            "given": "positive",
+            "index": 329,
+            "noise_score": 0.9999,
+            "predicted": "neutral"
+          },
+          {
+            "given": "Positive",
+            "index": 461,
+            "noise_score": 0.9998,
+            "predicted": "positive"
+          },
+          {
+            "given": "Neutral",
+            "index": 92,
+            "noise_score": 0.9998,
+            "predicted": "neutral"
+          },
+          {
+            "given": "negative",
+            "index": 325,
+            "noise_score": 0.9998,
+            "predicted": "positive"
+          },
+          {
+            "given": "negative",
+            "index": 1042,
+            "noise_score": 0.9997,
+            "predicted": "positive"
+          },
+          {
+            "given": " positive",
+            "index": 1315,
+            "noise_score": 0.9996,
+            "predicted": "positive"
+          },
+          {
+            "given": " negative",
+            "index": 263,
+            "noise_score": 0.9996,
+            "predicted": "negative"
+          },
+          {
+            "given": "Neutral",
+            "index": 285,
+            "noise_score": 0.9992,
+            "predicted": "neutral"
+          },
+          {
+            "given": "Positive",
+            "index": 554,
+            "noise_score": 0.9992,
+            "predicted": "positive"
+          },
+          {
+            "given": "Positive",
+            "index": 1129,
+            "noise_score": 0.9986,
+            "predicted": "positive"
+          },
+          {
+            "given": "negative",
+            "index": 489,
+            "noise_score": 0.9984,
+            "predicted": "positive"
+          },
+          {
+            "given": "positive",
+            "index": 1300,
+            "noise_score": 0.9983,
+            "predicted": "neutral"
+          },
+          {
+            "given": "neutral",
+            "index": 417,
+            "noise_score": 0.998,
+            "predicted": "negative"
+          },
+          {
+            "given": "negative",
+            "index": 1207,
+            "noise_score": 0.9962,
+            "predicted": "positive"
+          },
+          {
+            "given": "negative",
+            "index": 538,
+            "noise_score": 0.9943,
+            "predicted": "positive"
+          },
+          {
+            "given": "Neutral",
+            "index": 1144,
+            "noise_score": 0.9941,
+            "predicted": "neutral"
+          },
+          {
+            "given": "Neutral",
+            "index": 157,
+            "noise_score": 0.9912,
+            "predicted": "neutral"
+          },
+          {
+            "given": "negative",
+            "index": 1380,
+            "noise_score": 0.9881,
+            "predicted": "positive"
+          },
+          {
+            "given": " positive",
+            "index": 105,
+            "noise_score": 0.9875,
+            "predicted": "positive"
+          },
+          {
+            "given": "neutral",
+            "index": 1260,
+            "noise_score": 0.9841,
+            "predicted": "positive"
+          },
+          {
+            "given": "negative",
+            "index": 555,
+            "noise_score": 0.973,
+            "predicted": "positive"
+          },
+          {
+            "given": "Positive",
+            "index": 1400,
+            "noise_score": 0.9651,
+            "predicted": "positive"
+          },
+          {
+            "given": "neutral",
+            "index": 611,
+            "noise_score": 0.9625,
+            "predicted": "negative"
+          },
+          {
+            "given": " negative",
+            "index": 341,
+            "noise_score": 0.9593,
+            "predicted": "negative"
+          },
+          {
+            "given": "negative",
+            "index": 613,
+            "noise_score": 0.9375,
+            "predicted": "positive"
+          },
+          {
+            "given": "Positive",
+            "index": 61,
+            "noise_score": 0.9335,
+            "predicted": "positive"
+          },
+          {
+            "given": " positive",
+            "index": 232,
+            "noise_score": 0.9297,
+            "predicted": "positive"
+          },
+          {
+            "given": "positive",
+            "index": 208,
+            "noise_score": 0.8852,
+            "predicted": "neutral"
+          },
+          {
+            "given": "neutral",
+            "index": 1138,
+            "noise_score": 0.859,
+            "predicted": "positive"
+          },
+          {
+            "given": "Positive",
+            "index": 1394,
+            "noise_score": 0.7689,
+            "predicted": "positive"
+          }
+        ],
+        "share_of_rows": 0.06098360655737705
+      },
+      "id": "mislabels:sentiment",
+      "row_indices": [
+        89,
+        921,
+        702,
+        1023,
+        163,
+        398,
+        988,
+        1120,
+        1164,
+        633,
+        107,
+        1248,
+        690,
+        413,
+        650,
+        679,
+        1116,
+        724,
+        640,
+        313,
+        706,
+        474,
+        84,
+        261,
+        1242,
+        53,
+        226,
+        11,
+        220,
+        1191,
+        72,
+        1058,
+        238,
+        362,
+        1487,
+        1229,
+        304,
+        1095,
+        1215,
+        1055,
+        737,
+        1152,
+        1382,
+        775,
+        915,
+        776,
+        93,
+        955,
+        115,
+        831,
+        1237,
+        605,
+        1337,
+        790,
+        65,
+        10,
+        1419,
+        1496,
+        1492,
+        1007,
+        1430,
+        494,
+        1287,
+        329,
+        461,
+        92,
+        325,
+        1042,
+        1315,
+        263,
+        285,
+        554,
+        1129,
+        489,
+        1300,
+        417,
+        1207,
+        538,
+        1144,
+        157,
+        1380,
+        105,
+        1260,
+        555,
+        1400,
+        611,
+        341,
+        613,
+        61,
+        232,
+        208,
+        1138,
+        1394
+      ],
+      "scope": "row",
+      "severity": "high",
+      "suggested_action": "relabel",
+      "title": "93 rows have a label the model disagrees with",
+      "total_affected": 93
+    },
+    {
+      "check": "C3_id_like",
+      "column": "review_id",
+      "detail": "'review_id' takes 1500 distinct values across the 1525 rows it is filled on. Left in the feature set a model can memorise it, which scores well in validation and predicts nothing on new rows.",
+      "evidence": {
+        "n_unique": 1500
+      },
+      "id": "id_column:review_id",
+      "row_indices": [],
+      "scope": "column",
+      "severity": "medium",
+      "suggested_action": "drop_column",
+      "title": "'review_id' looks like an identifier",
+      "total_affected": 1500
+    },
+    {
+      "check": "C5_categorical_inconsistency",
+      "column": "sentiment",
+      "detail": "' negative', 'Negative', 'negative' are the same value written differently, and every model will treat them as separate categories. 60 rows use a non-canonical spelling.",
+      "evidence": {
+        "canonical": {
+          "negative": [
+            " negative",
+            "Negative",
+            "negative"
+          ],
+          "neutral": [
+            " neutral",
+            "Neutral",
+            "neutral"
+          ],
+          "positive": [
+            " positive",
+            "Positive",
+            "positive"
+          ]
+        }
+      },
+      "id": "inconsistent:sentiment",
+      "row_indices": [
+        84,
+        220,
+        263,
+        341,
+        398,
+        413,
+        474,
+        679,
+        831,
+        1152,
+        1164,
+        31,
+        92,
+        157,
+        163,
+        285,
+        441,
+        690,
+        802,
+        915,
+        1095,
+        1117,
+        1144,
+        1237,
+        10,
+        11,
+        53,
+        61,
+        93,
+        105,
+        115,
+        226,
+        232,
+        261,
+        313,
+        362,
+        461,
+        554,
+        650,
+        706,
+        724,
+        737,
+        775,
+        776,
+        790,
+        955,
+        988,
+        1055,
+        1058,
+        1116,
+        1129,
+        1215,
+        1248,
+        1287,
+        1315,
+        1337,
+        1382,
+        1394,
+        1400,
+        1419
+      ],
+      "scope": "column",
+      "severity": "medium",
+      "suggested_action": "normalize_values",
+      "title": "'sentiment' has 3 values spelled more than one way",
+      "total_affected": 60
+    },
+    {
+      "check": "D2_near_duplicates",
+      "column": null,
+      "detail": "25 pairs of rows agree on every field but one, covering 50 rows. Most commonly 'review_body' is 0.78 similar. Near-copies usually come from a re-import or a partial edit, and they weight the same record twice.",
+      "evidence": {
+        "n_pairs": 25,
+        "pairs": [
+          {
+            "a": 41,
+            "b": 1500,
+            "differs": "'review_body' is 0.78 similar"
+          },
+          {
+            "a": 1469,
+            "b": 1524,
+            "differs": "'review_body' is 0.76 similar"
+          },
+          {
+            "a": 978,
+            "b": 1516,
+            "differs": "'review_body' is 0.88 similar"
+          },
+          {
+            "a": 280,
+            "b": 1502,
+            "differs": "'review_body' is 0.78 similar"
+          },
+          {
+            "a": 1171,
+            "b": 1518,
+            "differs": "'review_body' is 0.77 similar"
+          },
+          {
+            "a": 957,
+            "b": 1515,
+            "differs": "'review_body' is 1.00 similar"
+          },
+          {
+            "a": 394,
+            "b": 1505,
+            "differs": "'review_body' is 0.75 similar"
+          },
+          {
+            "a": 1425,
+            "b": 1523,
+            "differs": "'review_body' is 0.84 similar"
+          },
+          {
+            "a": 1253,
+            "b": 1520,
+            "differs": "'review_body' is 1.00 similar"
+          },
+          {
+            "a": 513,
+            "b": 1507,
+            "differs": "'review_body' is 0.87 similar"
+          },
+          {
+            "a": 736,
+            "b": 1513,
+            "differs": "'review_body' is 0.91 similar"
+          },
+          {
+            "a": 1115,
+            "b": 1517,
+            "differs": "'review_body' is 0.76 similar"
+          },
+          {
+            "a": 873,
+            "b": 1514,
+            "differs": "'review_body' is 0.74 similar"
+          },
+          {
+            "a": 1358,
+            "b": 1522,
+            "differs": "'review_body' is 0.86 similar"
+          },
+          {
+            "a": 356,
+            "b": 1503,
+            "differs": "'review_body' is 0.78 similar"
+          },
+          {
+            "a": 678,
+            "b": 1511,
+            "differs": "'review_body' is 0.75 similar"
+          },
+          {
+            "a": 670,
+            "b": 1510,
+            "differs": "'review_body' is 0.79 similar"
+          },
+          {
+            "a": 1352,
+            "b": 1521,
+            "differs": "'review_body' is 0.83 similar"
+          },
+          {
+            "a": 1213,
+            "b": 1519,
+            "differs": "'review_body' is 0.77 similar"
+          },
+          {
+            "a": 620,
+            "b": 1508,
+            "differs": "'review_body' is 0.83 similar"
+          },
+          {
+            "a": 85,
+            "b": 1501,
+            "differs": "'review_body' is 0.74 similar"
+          },
+          {
+            "a": 506,
+            "b": 1506,
+            "differs": "'review_body' is 0.80 similar"
+          },
+          {
+            "a": 728,
+            "b": 1512,
+            "differs": "'review_body' is 1.00 similar"
+          },
+          {
+            "a": 383,
+            "b": 1504,
+            "differs": "'review_body' is 0.83 similar"
+          },
+          {
+            "a": 646,
+            "b": 1509,
+            "differs": "'review_body' is 0.80 similar"
+          }
+        ]
+      },
+      "id": "near_duplicates",
+      "row_indices": [
+        41,
+        85,
+        280,
+        356,
+        383,
+        394,
+        506,
+        513,
+        620,
+        646,
+        670,
+        678,
+        728,
+        736,
+        873,
+        957,
+        978,
+        1115,
+        1171,
+        1213,
+        1253,
+        1352,
+        1358,
+        1425,
+        1469,
+        1500,
+        1501,
+        1502,
+        1503,
+        1504,
+        1505,
+        1506,
+        1507,
+        1508,
+        1509,
+        1510,
+        1511,
+        1512,
+        1513,
+        1514,
+        1515,
+        1516,
+        1517,
+        1518,
+        1519,
+        1520,
+        1521,
+        1522,
+        1523,
+        1524
+      ],
+      "scope": "dataset",
+      "severity": "medium",
+      "suggested_action": "dedupe",
+      "title": "25 near-duplicate row pairs",
+      "total_affected": 50
+    },
+    {
+      "check": "D3_class_imbalance",
+      "column": "sentiment",
+      "detail": "' neutral' has 4 rows, 0.3% of the labelled data. That is fewer than the 5 cross-validation folds, so the mislabel and leakage checks will drop this class rather than score it.",
+      "evidence": {
+        "counts": {
+          " negative": 6,
+          " neutral": 4,
+          " positive": 15,
+          "Negative": 5,
+          "Neutral": 9,
+          "Positive": 21,
+          "negative": 452,
+          "neutral": 368,
+          "positive": 645
+        }
+      },
+      "id": "imbalance:sentiment",
+      "row_indices": [
+        31,
+        441,
+        802,
+        1117
+      ],
+      "scope": "dataset",
+      "severity": "medium",
+      "suggested_action": "review",
+      "title": "Smallest class in 'sentiment' is 0.3% of rows",
+      "total_affected": 4
+    },
+    {
+      "check": "C6_rare_categories",
+      "column": "sentiment",
+      "detail": "' neutral' appear 4 times or so. Categories this thin cannot be learned and will not survive a split.",
+      "evidence": {
+        "rare": {
+          " neutral": 4
+        }
+      },
+      "id": "rare_categories:sentiment",
+      "row_indices": [
+        31,
+        441,
+        802,
+        1117
+      ],
+      "scope": "column",
+      "severity": "low",
+      "suggested_action": "review",
+      "title": "'sentiment' has 1 category with under 5 rows",
+      "total_affected": 4
+    }
+  ],
+  "summary": {
+    "cv_accuracy": 0.9296515450361604,
+    "high": 1,
+    "low": 1,
+    "medium": 4,
+    "rows_affected": 147,
+    "skipped_checks": []
+  }
+}
