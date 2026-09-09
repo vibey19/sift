@@ -1,0 +1,112 @@
+// CSV parsing, written out rather than pulled in, because the whole point of the
+// architecture is that the browser holds the file and the server never stores it.
+// Follows RFC 4180: fields may be quoted, quotes escape by doubling, and a quoted
+// field may contain the delimiter or a newline.
+
+const QUOTE = '"'
+
+export function detectDelimiter(text) {
+  // Only the header is examined. A comma inside a quoted field further down would
+  // otherwise outvote a genuine tab-separated file.
+  const header = text.slice(0, text.indexOf('\n') === -1 ? text.length : text.indexOf('\n'))
+  let inQuotes = false
+  const counts = { ',': 0, '\t': 0, ';': 0 }
+  for (const char of header) {
+    if (char === QUOTE) inQuotes = !inQuotes
+    else if (!inQuotes && char in counts) counts[char] += 1
+  }
+  const [best] = Object.entries(counts).sort((a, b) => b[1] - a[1])
+  return best[1] > 0 ? best[0] : ','
+}
+
+export function parseCsv(text, { delimiter } = {}) {
+  if (typeof text !== 'string') throw new TypeError('parseCsv expects a string')
+  // A byte order mark would otherwise become part of the first column name and
+  // every later lookup by that name would miss.
+  const source = text.charCodeAt(0) === 0xfeff ? text.slice(1) : text
+  const sep = delimiter ?? detectDelimiter(source)
+
+  const rows = []
+  let row = []
+  let field = ''
+  let inQuotes = false
+  let started = false
+
+  const endField = () => {
+    row.push(field)
+    field = ''
+    started = false
+  }
+  const endRow = () => {
+    endField()
+    // A trailing newline produces one empty field, which is not a row.
+    if (!(row.length === 1 && row[0] === '')) rows.push(row)
+    row = []
+  }
+
+  for (let i = 0; i < source.length; i += 1) {
+    const char = source[i]
+
+    if (inQuotes) {
+      if (char === QUOTE) {
+        if (source[i + 1] === QUOTE) {
+          field += QUOTE
+          i += 1
+        } else {
+          inQuotes = false
+        }
+      } else {
+        field += char
+      }
+      continue
+    }
+
+    if (char === QUOTE && !started) {
+      inQuotes = true
+      started = true
+    } else if (char === sep) {
+      endField()
+    } else if (char === '\n') {
+      endRow()
+    } else if (char === '\r') {
+      // Swallow CRLF; a lone CR is treated as a line ending too.
+      if (source[i + 1] === '\n') i += 1
+      endRow()
+    } else {
+      field += char
+      started = true
+    }
+  }
+  if (field !== '' || row.length) endRow()
+
+  if (!rows.length) return { columns: [], rows: [], delimiter: sep }
+
+  const columns = rows[0].map((name, i) => name.trim() || `column_${i + 1}`)
+  const width = columns.length
+  const body = rows.slice(1).map((cells) => {
+    if (cells.length === width) return cells
+    // Ragged rows are common in exports and are not worth rejecting a file over.
+    // C1 will report the gaps that padding creates.
+    return cells.length < width
+      ? cells.concat(Array(width - cells.length).fill(''))
+      : cells.slice(0, width)
+  })
+
+  return { columns, rows: body, delimiter: sep }
+}
+
+const NEEDS_QUOTING = /[",\n\r\t;]/
+
+export function toCsv(columns, rows, delimiter = ',') {
+  const cell = (value) => {
+    const text = value == null ? '' : String(value)
+    return NEEDS_QUOTING.test(text) ? QUOTE + text.split(QUOTE).join(QUOTE + QUOTE) + QUOTE : text
+  }
+  const lines = [columns.map(cell).join(delimiter)]
+  for (const row of rows) lines.push(row.map(cell).join(delimiter))
+  return lines.join('\n') + '\n'
+}
+
+export function columnIndex(columns) {
+  return Object.fromEntries(columns.map((name, i) => [name, i]))
+}

@@ -32,7 +32,7 @@ CASES = [
 def main() -> None:
     OUT.mkdir(parents=True, exist_ok=True)
     for name, kind, sample, kwargs in CASES:
-        df = runner.load((ROOT / "samples" / f"{sample}.csv").read_text())
+        df = runner.load((ROOT / "public" / "samples" / f"{sample}.csv").read_text())
         payload = runner.profile_payload(df) if kind == "profile" else runner.audit(df, **kwargs)
         path = OUT / f"{name}.json"
         path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n")

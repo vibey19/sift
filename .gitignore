@@ -21,7 +21,7 @@ CLAUDE.md
 PLAN.md
 
 # Generated ground truth - must not ship to the deployed app
-samples/_truth.json
+tests/_truth.json
 
 # OS
 .DS_Store

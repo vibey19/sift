@@ -19,7 +19,10 @@ import numpy as np
 import pandas as pd
 
 SEED = 8117
-SAMPLES_DIR = Path(__file__).resolve().parent.parent / "samples"
+# public/ so the browser can fetch the samples from the app's empty state.
+SAMPLES_DIR = Path(__file__).resolve().parent.parent / "public" / "samples"
+# Ground truth must not sit under public/, where the build would publish it.
+TRUTH_PATH = Path(__file__).resolve().parent.parent / "tests" / "_truth.json"
 
 N_CHURN = 3000
 N_REVIEWS = 1500
@@ -336,8 +339,9 @@ def main() -> None:
         truths[name] = truth
         print(f"{name}.csv  {len(df)} rows x {len(df.columns)} cols")
 
-    (SAMPLES_DIR / "_truth.json").write_text(json.dumps(truths, indent=2))
-    print(f"_truth.json written to {SAMPLES_DIR}")
+    TRUTH_PATH.parent.mkdir(exist_ok=True)
+    TRUTH_PATH.write_text(json.dumps(truths, indent=2))
+    print(f"truth written to {TRUTH_PATH}")
 
 
 if __name__ == "__main__":
