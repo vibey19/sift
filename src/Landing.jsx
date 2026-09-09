@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 
 import Demo from './components/Demo.jsx'
+import DropCard from './components/DropCard.jsx'
 
 const GITHUB = 'https://github.com/vibey19/sift'
 
@@ -53,7 +54,7 @@ const LIMITS = [
   'Nothing is saved. Reload the page and your work is gone.',
 ]
 
-export default function Landing() {
+export default function Landing({ onOpen }) {
   // On a cold load the browser tries to reach the anchor before React has
   // rendered it, so the jump has to happen again once the page exists.
   useEffect(() => {
@@ -61,6 +62,14 @@ export default function Landing() {
     if (!hash) return
     document.querySelector(hash)?.scrollIntoView()
   }, [])
+
+  // Still a real link, so it opens in a new tab and shows a URL on hover. The
+  // handler only intercepts a plain left click.
+  const openBlank = (event) => {
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0) return
+    event.preventDefault()
+    onOpen(null)
+  }
 
   return (
     <div className="landing">
@@ -71,7 +80,7 @@ export default function Landing() {
             <a className="plain" href="#demo">Demo</a>
             <a className="plain" href="#catches">Checks</a>
             <a className="plain" href={GITHUB}>GitHub</a>
-            <a className="btn btn-primary" href="/app">Open the auditor</a>
+            <a className="btn btn-primary" href="/app" onClick={openBlank}>Open the auditor</a>
           </div>
         </div>
       </nav>
@@ -86,37 +95,12 @@ export default function Landing() {
             function and forgotten the moment the response is sent.
           </p>
           <div className="btn-row" style={{ marginTop: 28 }}>
-            <a className="btn btn-primary" href="/app">Audit a dataset</a>
             <a className="btn" href="#demo">See a sample run</a>
+            <a className="btn" href={GITHUB}>Read the code</a>
           </div>
         </div>
 
-        <div className="mock" aria-hidden>
-          <div className="mock-head">
-            <strong>churn_dirty.csv</strong>
-            <span style={{ marginLeft: 'auto' }}>3,075 rows · 14 cols</span>
-          </div>
-          <div className="mock-row">
-            <span className="mock-tag" data-severity="high">[HIGH]</span>
-            <span className="mock-text">'cancellation_reason' predicts 'churned' on its own at 0.99</span>
-          </div>
-          <div className="mock-row">
-            <span className="mock-tag" data-severity="high">[HIGH]</span>
-            <span className="mock-text">50 rows appear on both sides of 'split'</span>
-          </div>
-          <div className="mock-row">
-            <span className="mock-tag">[MED]</span>
-            <span className="mock-text">39 rows have a label the model disagrees with</span>
-          </div>
-          <div className="mock-row">
-            <span className="mock-tag">[MED]</span>
-            <span className="mock-text">20 near-duplicate row pairs</span>
-          </div>
-          <div className="mock-row">
-            <span className="mock-tag" style={{ color: 'var(--ink-soft)' }}>[LOW]</span>
-            <span className="mock-text">'region' has the same value in every row</span>
-          </div>
-        </div>
+        <DropCard onOpen={onOpen} />
       </header>
 
       <div className="strip">
@@ -223,7 +207,12 @@ export default function Landing() {
       <section className="section">
         <div className="wrap" style={{ textAlign: 'center' }}>
           <h2 style={{ fontSize: 38, marginBottom: 26 }}>Audit a dataset before you train on it.</h2>
-          <a className="btn btn-primary" href="/app" style={{ fontSize: 15, padding: '16px 30px' }}>
+          <a
+            className="btn btn-primary"
+            href="/app"
+            onClick={openBlank}
+            style={{ fontSize: 15, padding: '16px 30px' }}
+          >
             Open the auditor
           </a>
         </div>

@@ -8,9 +8,9 @@ export default function Summary({ dataset, summary, edits }) {
     <div className="summary">
       <Stat label={edits ? "Rows now" : "Rows"} value={dataset.rows.length.toLocaleString()} />
       <Stat label={edits ? "Columns now" : "Columns"} value={dataset.columns.length} />
-      <Stat label="High" value={summary.high} tone={summary.high ? 'alarm' : null} />
-      <Stat label="Medium" value={summary.medium} />
-      <Stat label="Low" value={summary.low} />
+      <Stat label="High" value={summary.high} severity={summary.high ? 'high' : null} />
+      <Stat label="Medium" value={summary.medium} severity={summary.medium ? 'medium' : null} />
+      <Stat label="Low" value={summary.low} severity={summary.low ? 'low' : null} />
       <Stat label="Rows affected" value={summary.rows_affected.toLocaleString()} />
       <Stat
         label={weak ? 'CV accuracy · weak' : 'CV accuracy'}
@@ -26,9 +26,14 @@ export default function Summary({ dataset, summary, edits }) {
   )
 }
 
-function Stat({ label, value, tone, title }) {
+function Stat({ label, value, tone, severity, title }) {
   return (
-    <div className="stat" data-tone={tone ?? undefined} title={title}>
+    <div
+      className="stat"
+      data-tone={tone ?? undefined}
+      data-severity={severity ?? undefined}
+      title={title}
+    >
       <div className="label">{label}</div>
       <div className="stat-value">{value}</div>
     </div>

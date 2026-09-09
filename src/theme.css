@@ -15,7 +15,14 @@ html { scroll-behavior: smooth; }
   --beige: #ede6d6;
   --ink: #0e0e0c;
   --ink-soft: #55554c;
-  --alarm: #e5352b;
+
+  /* Severity is a traffic light. Each value is picked for legibility as small
+     text rather than for brightness: all three clear 4.5:1 on both the white
+     app panel and the beige landing panel. Border weight still carries the
+     same signal, so the encoding survives greyscale and colour blindness. */
+  --alarm: #c62828; /* high */
+  --warn: #a35c00; /* medium */
+  --ok: #1f6f2b; /* low */
 
   /* App surface. Lime survives as an accent on exactly two things: the selected
      issue row and the primary button. That thread ties the two screens. */
@@ -29,6 +36,10 @@ html { scroll-behavior: smooth; }
 }
 
 *, *::before, *::after { box-sizing: border-box; border-radius: 0; }
+
+[data-severity='high'] { --sev: var(--alarm); }
+[data-severity='medium'] { --sev: var(--warn); }
+[data-severity='low'] { --sev: var(--ok); }
 
 body {
   margin: 0;
@@ -140,7 +151,7 @@ select:focus-visible, button:focus-visible, a:focus-visible {
 .stat { padding: 12px 18px; border-right: 1px solid var(--app-border); }
 .stat:last-child { border-right: 0; }
 .stat-value { font-family: var(--mono); font-size: 19px; font-weight: 500; }
-.stat[data-tone='alarm'] .stat-value { color: var(--alarm); }
+.stat[data-severity] .stat-value { color: var(--sev); }
 .stat[data-tone='warn'] { background: #fff8e6; }
 
 /* ---------- issues ---------- */
@@ -166,14 +177,14 @@ select:focus-visible, button:focus-visible, a:focus-visible {
 .issue:hover { background: var(--app-surface); }
 /* Severity is carried by border weight as well as the tag, because the palette
    is nearly two-tone and colour alone would not survive a greyscale print. */
-.issue[data-severity='high'] { border-left-width: 6px; border-left-color: var(--alarm); }
-.issue[data-severity='medium'] { border-left-width: 4px; border-left-color: var(--ink); }
-.issue[data-severity='low'] { border-left-width: 2px; border-left-color: var(--app-border); }
+.issue { border-left-color: var(--sev); }
+.issue[data-severity='high'] { border-left-width: 6px; }
+.issue[data-severity='medium'] { border-left-width: 4px; }
+.issue[data-severity='low'] { border-left-width: 2px; }
 .issue[data-selected='true'] { background: var(--lime); }
 .issue[data-selected='true']:hover { background: var(--lime); }
 
-.issue-tag { font-family: var(--mono); font-size: 11px; letter-spacing: 0.04em; }
-.issue[data-severity='high'] .issue-tag { color: var(--alarm); }
+.issue-tag { font-family: var(--mono); font-size: 11px; letter-spacing: 0.04em; color: var(--sev); }
 .issue-title { display: block; margin-top: 2px; }
 
 .detail { padding: 18px 20px; border: 1px solid var(--app-border); background: var(--app-panel); }
@@ -191,6 +202,7 @@ select:focus-visible, button:focus-visible, a:focus-visible {
 
 .notice { border: 1px solid var(--ink); border-left-width: 4px; background: var(--app-panel); padding: 14px 16px; }
 .notice[data-tone='alarm'] { border-left-color: var(--alarm); }
+.notice[data-tone='alarm'] { color: var(--ink); }
 
 @media (prefers-reduced-motion: reduce) {
   .loading-bar i { animation: none; width: 100%; }
@@ -310,15 +322,6 @@ body[data-surface='landing'] { background: var(--lime); font-size: 17px; }
 
 .hero { display: grid; grid-template-columns: 1.05fr 0.95fr; gap: 48px; align-items: start; padding: 88px 0 72px; }
 
-.mock { background: var(--beige); border: 2px solid var(--ink); box-shadow: 6px 6px 0 var(--ink); }
-.mock-head { display: flex; gap: 10px; align-items: baseline; padding: 12px 16px; border-bottom: 2px solid var(--ink); font-family: var(--mono); font-size: 12px; }
-.mock-row { display: flex; gap: 12px; padding: 13px 16px; border-bottom: 1px solid rgba(14, 14, 12, 0.18); align-items: baseline; }
-.mock-row:last-child { border-bottom: 0; }
-.mock-tag { font-family: var(--mono); font-size: 11px; letter-spacing: 0.04em; white-space: nowrap; }
-.mock-tag[data-severity='high'] { color: var(--alarm); }
-.mock-text { font-size: 14px; line-height: 1.4; }
-.mock-count { margin-left: auto; font-family: var(--mono); font-size: 12px; color: var(--ink-soft); white-space: nowrap; }
-
 /* ---------- stat strip ---------- */
 
 .strip { background: var(--beige); border-top: 2px solid var(--ink); border-bottom: 2px solid var(--ink); }
@@ -387,3 +390,53 @@ body[data-surface='landing'] { background: var(--lime); font-size: 17px; }
   .foot-inner { padding: 20px 18px; }
   .foot a { margin-left: 0 !important; }
 }
+
+.link-back {
+  border: 0;
+  background: none;
+  padding: 0;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+.link-back:hover { color: var(--ink); background: none; }
+
+/* ---------- landing entry point ---------- */
+
+.start { display: grid; gap: 14px; }
+
+.start-drop {
+  background: var(--beige);
+  border: 2px solid var(--ink);
+  box-shadow: 6px 6px 0 var(--ink);
+  padding: 34px 24px 26px;
+  text-align: center;
+}
+.start-drop[data-active='true'] { background: #fff; }
+.start-title { font-family: var(--mono); font-size: 17px; margin: 0 0 6px; }
+.start-sub { font-family: var(--mono); font-size: 12px; color: var(--ink-soft); margin: 0 0 12px; }
+.start-note {
+  font-family: var(--mono);
+  font-size: 11px;
+  line-height: 1.6;
+  color: var(--ink-soft);
+  margin: 18px 0 0;
+}
+
+.start-samples { display: grid; gap: 8px; }
+.start-sample {
+  text-align: left;
+  background: transparent;
+  border: 2px solid var(--ink);
+  padding: 11px 14px;
+  font-family: var(--body);
+  font-size: 13px;
+  line-height: 1.45;
+  cursor: pointer;
+}
+.start-sample:hover:not(:disabled) { background: var(--beige); }
+.start-sample strong { font-family: var(--mono); font-size: 12px; display: block; margin-bottom: 2px; }
+.start-sample span { color: var(--ink); }
+
+.start-error { color: var(--alarm); font-size: 12px; margin: 0; }

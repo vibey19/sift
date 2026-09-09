@@ -1,21 +1,6 @@
 import { useRef, useState } from 'react'
 
-const SAMPLES = [
-  {
-    name: 'churn_dirty.csv',
-    path: '/samples/churn_dirty.csv',
-    label: 'churned',
-    split: 'split',
-    wrong: 'A column populated only after customers left, 25 records sitting in both train and test, and 40 labels flipped.',
-  },
-  {
-    name: 'reviews_dirty.csv',
-    path: '/samples/reviews_dirty.csv',
-    label: 'sentiment',
-    split: 'split',
-    wrong: 'Three sentiment classes written nine different ways, plus re-posted reviews with one figure changed.',
-  },
-]
+import { ACCEPTS, SAMPLES, readSample } from '../samples.js'
 
 export default function Upload({ onFile, disabled }) {
   const [dragging, setDragging] = useState(false)
@@ -24,7 +9,7 @@ export default function Upload({ onFile, disabled }) {
 
   const take = async (file) => {
     setError(null)
-    if (!/\.(csv|tsv|txt)$/i.test(file.name)) {
+    if (!ACCEPTS.test(file.name)) {
       setError(`${file.name} is not a CSV or TSV. Sift reads those two formats only.`)
       return
     }
@@ -34,9 +19,8 @@ export default function Upload({ onFile, disabled }) {
   const loadSample = async (sample) => {
     setError(null)
     try {
-      const response = await fetch(sample.path)
-      if (!response.ok) throw new Error(String(response.status))
-      onFile(sample.name, await response.text(), { label: sample.label, split: sample.split })
+      const { name, text, hints } = await readSample(sample)
+      onFile(name, text, hints)
     } catch {
       setError(`Could not load ${sample.name}.`)
     }

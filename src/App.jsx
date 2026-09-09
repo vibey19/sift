@@ -16,7 +16,7 @@ const MAX_COLS = 200
 // Vercel caps a serverless request body at 4.5MB.
 const MAX_BYTES = 4.5 * 1024 * 1024
 
-export default function App() {
+export default function App({ handoff, onLeave }) {
   const [stage, setStage] = useState('empty')
   const [dataset, setDataset] = useState(null)
   const [columnProfile, setColumnProfile] = useState(null)
@@ -25,6 +25,15 @@ export default function App() {
   const [selectedId, setSelectedId] = useState(null)
   const [edits, setEdits] = useState([])
   const [error, setError] = useState(null)
+
+  // A file chosen on the landing page arrives here already read. Consumed once,
+  // by name, so a re-render cannot start the same audit twice.
+  useEffect(() => {
+    if (handoff && handoff.name !== dataset?.name) {
+      onFile(handoff.name, handoff.text, handoff.hints ?? {})
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [handoff])
 
   const reset = () => {
     setStage('empty')
@@ -144,11 +153,12 @@ export default function App() {
       <header className="app-header">
         <span className="wordmark">SIFT</span>
         <span className="label">dataset quality auditor</span>
-        {dataset && (
-          <span className="label mono" style={{ marginLeft: 'auto', textTransform: 'none' }}>
-            {dataset.name}
-          </span>
-        )}
+        <span style={{ marginLeft: 'auto', display: 'flex', gap: 16, alignItems: 'baseline' }}>
+          {dataset && (
+            <span className="label mono" style={{ textTransform: 'none' }}>{dataset.name}</span>
+          )}
+          <button className="link-back" onClick={onLeave}>← back to the site</button>
+        </span>
       </header>
 
       <main className="app-main">

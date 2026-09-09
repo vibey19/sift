@@ -25,9 +25,9 @@ export default function Demo() {
           <div className="demo-bar">
             <Stat label="Rows" value={demo.n_rows.toLocaleString()} />
             <Stat label="Columns" value={demo.n_cols} />
-            <Stat label="High" value={demo.high} tone="alarm" />
-            <Stat label="Medium" value={demo.medium} />
-            <Stat label="Low" value={demo.low} />
+            <Stat label="High" value={demo.high} severity="high" />
+            <Stat label="Medium" value={demo.medium} severity="medium" />
+            <Stat label="Low" value={demo.low} severity="low" />
             <Stat label="CV accuracy" value={demo.cv_accuracy.toFixed(3)} />
           </div>
 
@@ -72,9 +72,9 @@ export default function Demo() {
   )
 }
 
-function Stat({ label, value, tone }) {
+function Stat({ label, value, severity }) {
   return (
-    <div className="stat" data-tone={tone}>
+    <div className="stat" data-severity={severity}>
       <div className="label">{label}</div>
       <div className="stat-value">{value}</div>
     </div>
