@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { ApiError, audit, profile as fetchProfile } from './api.js'
 import { parseCsv, toCsv } from './csv.js'
 import { describe as describeEdit, replay } from './edits.js'
+import { buildReport } from './report.js'
 import ColumnMap from './components/ColumnMap.jsx'
 import IssueDetail from './components/IssueDetail.jsx'
 import IssueList from './components/IssueList.jsx'
@@ -123,17 +124,31 @@ export default function App({ handoff, onLeave }) {
   const addEdit = (edit) => setEdits((log) => log.concat(edit))
   const undo = () => setEdits((log) => log.slice(0, -1))
 
-  const download = () => {
-    const blob = new Blob([toCsv(current.columns, current.rows, dataset.delimiter)], {
-      type: 'text/csv;charset=utf-8',
-    })
+  const save = (contents, suffix, type) => {
+    const blob = new Blob([contents], { type })
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url
-    link.download = dataset.name.replace(/\.(csv|tsv|txt)$/i, '') + '_cleaned.csv'
+    link.download = dataset.name.replace(/\.(csv|tsv|txt)$/i, '') + suffix
     link.click()
     URL.revokeObjectURL(url)
   }
+
+  const download = () =>
+    save(
+      toCsv(current.columns, current.rows, dataset.delimiter),
+      '_cleaned.csv',
+      'text/csv;charset=utf-8',
+    )
+
+  // Describes the data as it stands, edits included, so the report and the CSV
+  // downloaded beside it never disagree.
+  const downloadReport = () =>
+    save(
+      buildReport({ dataset, result, mapping, edits, current }),
+      '_audit.md',
+      'text/markdown;charset=utf-8',
+    )
 
   // Re-auditing sends the edited rows back through the same endpoint. The
   // interesting case is dropping the leaked column and watching accuracy fall.
@@ -198,6 +213,12 @@ export default function App({ handoff, onLeave }) {
           <>
             <Summary dataset={current} summary={result.summary} edits={edits.length} />
 
+            {edits.length === 0 && (
+              <div className="actions" style={{ marginTop: -4 }}>
+                <button onClick={downloadReport}>Download the audit report</button>
+              </div>
+            )}
+
             {edits.length > 0 && (
               <div className="edit-log">
                 <div className="label">
@@ -213,6 +234,7 @@ export default function App({ handoff, onLeave }) {
                 <div className="actions" style={{ marginBottom: 0 }}>
                   <button onClick={undo}>Undo the last edit</button>
                   <button onClick={reaudit}>Re-audit the cleaned data</button>
+                  <button onClick={downloadReport}>Download the audit report</button>
                   <button className="button-primary" onClick={download}>
                     Download cleaned CSV
                   </button>

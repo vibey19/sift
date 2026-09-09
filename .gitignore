@@ -13,10 +13,7 @@ dist/
 # Vercel
 .vercel/
 
-# Tooling and working notes - not part of the shipped project
-.claude/
-CLAUDE.md
-.mcp.json
+# Working notes, not part of the shipped project
 *.local.json
 PLAN.md
 
