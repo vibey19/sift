@@ -31,7 +31,8 @@ export default function ColumnMap({ profile, label, split, onChange, onRun, onRe
         />
         <div style={{ display: 'flex', gap: 8, marginLeft: 'auto' }}>
           <button onClick={onReset} disabled={busy}>Use a different file</button>
-          <button className="button-primary" onClick={onRun} disabled={busy}>
+          {/* Wrapped, or React hands the click event in as the first argument. */}
+          <button className="button-primary" onClick={() => onRun()} disabled={busy}>
             {busy ? 'Auditing...' : 'Run the audit'}
           </button>
         </div>

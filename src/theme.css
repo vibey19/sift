@@ -193,3 +193,43 @@ select:focus-visible, button:focus-visible, a:focus-visible {
 @media (prefers-reduced-motion: reduce) {
   .loading-bar i { animation: none; width: 100%; }
 }
+
+/* ---------- row table ---------- */
+
+.table-scroll { overflow-x: auto; border: 1px solid var(--app-border); background: var(--app-panel); }
+
+table.rows { border-collapse: collapse; font-size: 12px; width: 100%; }
+table.rows th,
+table.rows td {
+  border-bottom: 1px solid var(--app-border);
+  padding: 6px 10px;
+  text-align: left;
+  white-space: nowrap;
+  max-width: 260px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+table.rows th {
+  position: sticky;
+  top: 0;
+  background: var(--app-panel);
+  border-bottom: 1px solid var(--ink);
+  font-weight: 500;
+  color: var(--ink-soft);
+}
+table.rows th[data-highlight='true'],
+table.rows td[data-highlight='true'] { background: #f4f9d9; color: var(--ink); }
+table.rows tr[data-dropped='true'] td { color: var(--ink-soft); text-decoration: line-through; }
+table.rows th[data-dropped='true'],
+table.rows td[data-dropped='true'] { color: var(--ink-soft); text-decoration: line-through; background: var(--app-surface); }
+.row-number { color: var(--ink-soft); border-right: 1px solid var(--app-border); }
+.blank { color: var(--ink-soft); font-style: italic; }
+
+.pager { display: flex; align-items: center; gap: 12px; padding: 10px 0; }
+
+/* ---------- actions ---------- */
+
+.actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 16px 0; }
+.edit-log { border: 1px solid var(--app-border); background: var(--app-panel); padding: 12px 14px; margin-bottom: 16px; }
+.edit-log ol { margin: 6px 0 0; padding-left: 20px; font-family: var(--mono); font-size: 12px; }
+.done { color: var(--ink-soft); font-family: var(--mono); font-size: 12px; }

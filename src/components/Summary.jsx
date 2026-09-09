@@ -1,4 +1,4 @@
-export default function Summary({ dataset, summary }) {
+export default function Summary({ dataset, summary, edits }) {
   const cv = summary.cv_accuracy
   // Printed next to the flags rather than hidden. A list of suspicious rows
   // means nothing until you know whether the model could learn the task at all.
@@ -6,8 +6,8 @@ export default function Summary({ dataset, summary }) {
 
   return (
     <div className="summary">
-      <Stat label="Rows" value={dataset.rows.length.toLocaleString()} />
-      <Stat label="Columns" value={dataset.columns.length} />
+      <Stat label={edits ? "Rows now" : "Rows"} value={dataset.rows.length.toLocaleString()} />
+      <Stat label={edits ? "Columns now" : "Columns"} value={dataset.columns.length} />
       <Stat label="High" value={summary.high} tone={summary.high ? 'alarm' : null} />
       <Stat label="Medium" value={summary.medium} />
       <Stat label="Low" value={summary.low} />

@@ -33,12 +33,16 @@ async function fromFixture(name) {
 }
 
 async function post(path, body) {
+  // Serialised before the try, so a bad payload cannot masquerade as the network
+  // being down. That exact confusion cost an afternoon once.
+  const payload = JSON.stringify(body)
+
   let response
   try {
     response = await fetch(path, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
+      body: payload,
     })
   } catch {
     throw new ApiError('Could not reach the server. Check your connection and try again.', 0)

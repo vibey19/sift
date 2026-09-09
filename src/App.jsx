@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 
 import { ApiError, audit, profile as fetchProfile } from './api.js'
-import { parseCsv } from './csv.js'
+import { parseCsv, toCsv } from './csv.js'
+import { describe as describeEdit, replay } from './edits.js'
 import ColumnMap from './components/ColumnMap.jsx'
 import IssueDetail from './components/IssueDetail.jsx'
 import IssueList from './components/IssueList.jsx'
@@ -22,6 +23,7 @@ export default function App() {
   const [mapping, setMapping] = useState({ label: null, split: null })
   const [result, setResult] = useState(null)
   const [selectedId, setSelectedId] = useState(null)
+  const [edits, setEdits] = useState([])
   const [error, setError] = useState(null)
 
   const reset = () => {
@@ -31,6 +33,7 @@ export default function App() {
     setMapping({ label: null, split: null })
     setResult(null)
     setSelectedId(null)
+    setEdits([])
     setError(null)
   }
 
@@ -64,6 +67,7 @@ export default function App() {
     }
 
     setDataset({ name, csv: text, ...parsed })
+    setEdits([])
     setStage('profiling')
     try {
       const body = await fetchProfile(text, { delimiter: parsed.delimiter })
@@ -81,21 +85,53 @@ export default function App() {
     }
   }
 
-  const run = async () => {
+  // Replayed on every render rather than kept as mutated state, so the parsed
+  // file stays authoritative and undo is a pop.
+  const current = useMemo(
+    () => (dataset ? replay(dataset.columns, dataset.rows, edits) : null),
+    [dataset, edits],
+  )
+
+  const run = async (csv = dataset.csv, keepEdits = false) => {
     setStage('auditing')
     setError(null)
     try {
-      const body = await audit(dataset.csv, {
+      const body = await audit(csv, {
         labelColumn: mapping.label,
         splitColumn: mapping.split,
       })
       setResult(body)
       setSelectedId(body.issues[0]?.id ?? null)
+      if (!keepEdits) setEdits([])
       setStage('results')
     } catch (err) {
       setError(messageFor(err))
       setStage('mapping')
     }
+  }
+
+  const addEdit = (edit) => setEdits((log) => log.concat(edit))
+  const undo = () => setEdits((log) => log.slice(0, -1))
+
+  const download = () => {
+    const blob = new Blob([toCsv(current.columns, current.rows, dataset.delimiter)], {
+      type: 'text/csv;charset=utf-8',
+    })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = dataset.name.replace(/\.(csv|tsv|txt)$/i, '') + '_cleaned.csv'
+    link.click()
+    URL.revokeObjectURL(url)
+  }
+
+  // Re-auditing sends the edited rows back through the same endpoint. The
+  // interesting case is dropping the leaked column and watching accuracy fall.
+  const reaudit = () => {
+    const cleaned = toCsv(current.columns, current.rows, dataset.delimiter)
+    setDataset({ ...dataset, csv: cleaned, columns: current.columns, rows: current.rows })
+    setEdits([])
+    run(cleaned)
   }
 
   const selected = useMemo(
@@ -148,7 +184,29 @@ export default function App() {
 
         {stage === 'results' && result && (
           <>
-            <Summary dataset={dataset} summary={result.summary} />
+            <Summary dataset={current} summary={result.summary} edits={edits.length} />
+
+            {edits.length > 0 && (
+              <div className="edit-log">
+                <div className="label">
+                  {edits.length} edit{edits.length === 1 ? '' : 's'} ·{' '}
+                  {plural(dataset.rows.length - current.rows.length, 'row')} and{' '}
+                  {plural(dataset.columns.length - current.columns.length, 'column')} removed
+                </div>
+                <ol>
+                  {edits.map((edit, i) => (
+                    <li key={i}>{describeEdit(edit)}</li>
+                  ))}
+                </ol>
+                <div className="actions" style={{ marginBottom: 0 }}>
+                  <button onClick={undo}>Undo the last edit</button>
+                  <button onClick={reaudit}>Re-audit the cleaned data</button>
+                  <button className="button-primary" onClick={download}>
+                    Download cleaned CSV
+                  </button>
+                </div>
+              </div>
+            )}
             {result.summary.skipped_checks.length > 0 && (
               <div className="notice" style={{ marginBottom: 16 }}>
                 <div className="label" style={{ marginBottom: 6 }}>Not run</div>
@@ -161,7 +219,12 @@ export default function App() {
             )}
             <div className="columns">
               <IssueList issues={result.issues} selectedId={selectedId} onSelect={setSelectedId} />
-              <IssueDetail issue={selected} />
+              <IssueDetail
+                issue={selected}
+                dataset={dataset}
+                current={current}
+                onEdit={(edit) => addEdit(Array.isArray(edit) ? edit : [edit])}
+              />
             </div>
           </>
         )}
@@ -189,6 +252,10 @@ function Working({ title, note }) {
       <div className="loading-bar" aria-hidden><i /></div>
     </div>
   )
+}
+
+function plural(n, noun) {
+  return `${n.toLocaleString()} ${noun}${n === 1 ? '' : 's'}`
 }
 
 function messageFor(err) {
