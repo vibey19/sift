@@ -344,11 +344,15 @@ def make_reviews(seed: int = SEED) -> tuple[pd.DataFrame, dict]:
 def main() -> None:
     SAMPLES_DIR.mkdir(exist_ok=True)
     truths = {}
+    # Both frames are ground truth for the recall tests, but only churn ships as
+    # a sample. The second shipped sample is a real export (cafe_dirty.csv),
+    # which is checked in rather than generated and so is not written here.
     for name, builder in (("churn_dirty", make_churn), ("reviews_dirty", make_reviews)):
         df, truth = builder()
-        df.to_csv(SAMPLES_DIR / f"{name}.csv", index=False)
         truths[name] = truth
-        print(f"{name}.csv  {len(df)} rows x {len(df.columns)} cols")
+        if name == "churn_dirty":
+            df.to_csv(SAMPLES_DIR / f"{name}.csv", index=False)
+            print(f"{name}.csv  {len(df)} rows x {len(df.columns)} cols")
 
     TRUTH_PATH.parent.mkdir(exist_ok=True)
     TRUTH_PATH.write_text(json.dumps(truths, indent=2))

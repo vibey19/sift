@@ -29,12 +29,12 @@ def load(name):
 
 @pytest.fixture(scope="module")
 def audits():
-    return {n: load(n) for n in ("audit_churn", "audit_reviews", "audit_no_label")}
+    return {n: load(n) for n in ("audit_churn", "audit_cafe", "audit_no_label")}
 
 
 def test_the_fixtures_exist():
     # They are committed on purpose: the frontend must build without a backend.
-    for name in ("profile_churn", "audit_churn", "audit_reviews", "audit_no_label"):
+    for name in ("profile_churn", "audit_churn", "audit_cafe", "audit_no_label"):
         assert (FIXTURES / f"{name}.json").exists(), f"run scripts/make_fixtures.py ({name})"
 
 

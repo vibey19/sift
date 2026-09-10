@@ -22,7 +22,7 @@ OUT = ROOT / "src" / "fixtures"
 CASES = [
     ("profile_churn", "profile", "churn_dirty", {}),
     ("audit_churn", "audit", "churn_dirty", {"label_column": "churned", "split_column": "split"}),
-    ("audit_reviews", "audit", "reviews_dirty", {"label_column": "sentiment", "split_column": "split"}),
+    ("audit_cafe", "audit", "cafe_dirty", {}),
     # No label chosen: everything label-aware should report itself as skipped
     # rather than silently returning nothing.
     ("audit_no_label", "audit", "churn_dirty", {}),

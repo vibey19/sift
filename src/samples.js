@@ -15,13 +15,14 @@ export const SAMPLES = [
       'train and test, and 40 labels flipped.',
   },
   {
-    name: 'reviews_dirty.csv',
-    path: '/samples/reviews_dirty.csv',
-    label: 'sentiment',
-    split: 'split',
+    // A real export, so it carries no label or split column and the label-aware
+    // checks report themselves as skipped. That is the honest result for a file
+    // of this shape, and worth showing.
+    name: 'cafe_dirty.csv',
+    path: '/samples/cafe_dirty.csv',
     wrong:
-      'Three sentiment classes written nine different ways, plus re-posted ' +
-      'reviews with one figure changed.',
+      'Seven columns writing missing values as ERROR and UNKNOWN, and 1,398 ' +
+      'blank cells the remaining columns can work back out.',
   },
 ]
 

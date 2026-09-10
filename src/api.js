@@ -17,7 +17,7 @@ const FIXTURE_DELAY = Number(import.meta.env.VITE_FIXTURE_DELAY ?? 400)
 const FIXTURES = {
   profile_churn: () => import('./fixtures/profile_churn.json'),
   audit_churn: () => import('./fixtures/audit_churn.json'),
-  audit_reviews: () => import('./fixtures/audit_reviews.json'),
+  audit_cafe: () => import('./fixtures/audit_cafe.json'),
   audit_no_label: () => import('./fixtures/audit_no_label.json'),
 }
 
