@@ -285,3 +285,39 @@ test('a column that disagrees with itself is left to the plain number', () => {
   )
   assert.equal(out.rows[3][2], '42')
 })
+
+test('an empty cell is not a zero', () => {
+  // Number('') is 0 and Number.isFinite(0) is true, so a blank quantity was
+  // being read as a quantity of zero and a total of zero written from it.
+  // On a 10,000 row file that fabricated 23 sales of nothing for nothing.
+  const out = replay(
+    ['qty', 'price', 'total'],
+    [
+      ['1', '4.0', '4.0'],  // an existing value, so the column has a style
+      ['2', '4.0', ''],     // computable
+      ['', '4.0', ''],      // not: no quantity
+      ['3', '', ''],        // not: no price
+      [' ', '4.0', ''],     // not: whitespace is not a quantity either
+    ],
+    [{ op: FILL_FROM_FORMULA, column: 'total', left: 'qty', right: 'price', operation: 'product' }],
+  )
+  assert.deepEqual(out.rows.map((r) => r[2]), ['4.0', '8.0', '', '', ''])
+})
+
+test('a zero that is really in the file is still used', () => {
+  const out = replay(
+    ['qty', 'price', 'total'],
+    [['1', '4.0', '4.0'], ['0', '4.0', ''], ['2', '0.0', '']],
+    [{ op: FILL_FROM_FORMULA, column: 'total', left: 'qty', right: 'price', operation: 'product' }],
+  )
+  assert.deepEqual(out.rows.map((r) => r[2]), ['4.0', '0.0', '0.0'])
+})
+
+test('a target column with no numbers in it yet gets the plain number', () => {
+  const out = replay(
+    ['qty', 'price', 'total'],
+    [['2', '4.0', ''], ['3', '4.0', '']],
+    [{ op: FILL_FROM_FORMULA, column: 'total', left: 'qty', right: 'price', operation: 'product' }],
+  )
+  assert.deepEqual(out.rows.map((r) => r[2]), ['8', '12'])
+})

@@ -9,6 +9,7 @@ import { columnIndex } from './csv.js'
 import {
   parseBoolean,
   parseDate,
+  parseNumber,
   stripInvisible,
   stripMarkup,
   stripNumberFormatting,
@@ -182,9 +183,14 @@ export function replay(columns, rows, edits) {
         for (let row = 0; row < rows.length; row += 1) {
           if (droppedRows.has(row)) continue
           if (String(cellAt(row, col) ?? '').trim() !== '') continue
-          const x = Number(cellAt(row, a))
-          const y = Number(cellAt(row, b))
-          if (!Number.isFinite(x) || !Number.isFinite(y)) continue
+          // Through the shared parser, not Number(), because Number('') is 0
+          // and Number.isFinite(0) is true. An empty cell was being read as a
+          // quantity of zero and a total of zero written from it: 23 fabricated
+          // rows in a 10,000 row file, each one a sale of nothing for nothing.
+          // parseNumber returns null for anything that is not a number.
+          const x = parseNumber(cellAt(row, a))
+          const y = parseNumber(cellAt(row, b))
+          if (x === null || y === null) continue
           if (edit.operation === 'quotient' && y === 0) continue
           const value =
             edit.operation === 'product'
