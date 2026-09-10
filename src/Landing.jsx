@@ -230,7 +230,7 @@ export default function Landing({ onOpen }) {
 
       <footer className="foot">
         <div className="foot-inner">
-          <span>Built by Jainil Dadhaniya · MSc Data Science, Tampere University</span>
+          <span>Built by Jainil Dadhaniya</span>
           <a href={GITHUB} style={{ marginLeft: 'auto' }}>GitHub</a>
         </div>
       </footer>
