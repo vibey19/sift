@@ -2,7 +2,7 @@
 
 Sift cleans a messy CSV without the notebook. Drop a file in and it runs twenty-nine checks, fixes the unambiguous problems in one click, and hands you the rest with the row numbers and a reason.
 
-Live: `<url>` · Sample datasets load from the empty state, so you can try it without uploading anything.
+Live: `<https://sift-csv.vercel.app/>` · Sample datasets load from the empty state, so you can try it without uploading anything.
 
 ![Dropping in a sample CSV, applying the four safe fixes in one click, then dropping the leaked column it found and watching the reported accuracy fall from 0.985 to 0.718](docs/demo.gif)
 
@@ -36,14 +36,6 @@ Most of the checks are rules. These three are not, and they are the reason the p
 
 **Train/test contamination.** Rows appearing on both sides of a split column, exactly and approximately. This is the failure that produces the most confident wrong result, because the validation score comes back high and nothing in the training curve suggests anything went wrong.
 
-## A note on near-duplicates, because I got this wrong first
-
-My first attempt encoded every row into one feature matrix (text through TF-IDF and SVD, numbers rank-scaled, categories one-hot encoded), normalised it, and compared rows by cosine similarity. It returned 27,595 near-duplicate pairs on a dataset where I had planted 20.
-
-The problem is not the threshold. With a handful of one-hot columns, two unrelated rows already sit at a median cosine of 0.51, and the 99th percentile is 0.956. There is no cut point that separates real duplicates from coincidence.
-
-So I changed the question. A near-duplicate is the same record entered twice: every field agrees except one, and that one is close rather than different. Candidates come from hashing each leave-one-column-out view of the frame, which is linear in the row count instead of quadratic, and the pairwise comparison only ever runs inside a bucket already known to agree on everything else. That took the same dataset from 27,595 pairs to all 20 planted pairs and nothing else.
-
 ## Watching it argue against itself
 
 Audit the churn sample and it reports 0.985 cross-validation accuracy and flags 39 mislabelled rows. Drop the leaked column it just told you about, drop the contaminated rows, and re-audit:
@@ -55,7 +47,7 @@ after   ·  cv accuracy 0.710  ·  108 rows flagged
 
 Accuracy falls and the flag count nearly triples, because without the leak the model is genuinely uncertain and disagrees with far more rows. The first line is the one you would have believed if the tool had hidden its own accuracy. That is the whole argument for printing it next to the flags.
 
-The five numbers that decide what gets flagged were set by sweeping each one against datasets with faults injected on purpose, so recall and false positives could be measured rather than guessed: [the thresholds I chose and why](docs/thresholds.md).
+The five numbers that decide what gets flagged were set by sweeping each one against datasets with faults injected on purpose, so recall and false positives could be measured rather than guessed: [the thresholds I chose and why](docs/thresholds.md). The near-duplicate check is the one I got wrong first, and [how it went from 27,595 false pairs to 20](docs/near-duplicates.md) is written up separately.
 
 ## What it can't do
 
