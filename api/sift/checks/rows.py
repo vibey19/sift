@@ -96,7 +96,10 @@ def run(
     # it puts the rows the model is most sure about at the top of the list.
     noise = (p_top - p_given)[flagged]
     rows = df.index.to_numpy()[positions][flagged]
-    order = np.argsort(-noise)
+    # Row index breaks ties. argsort's default is not stable, so rows sharing a
+    # noise score came back in a different order on every run, which rewrote the
+    # committed fixtures without any finding actually changing.
+    order = np.lexsort((rows, -noise))
     rows, noise = rows[order], noise[order]
 
     share = len(rows) / len(df)
