@@ -115,7 +115,6 @@ SVD_COMPONENTS = 128
 # hashing that replaced it is linear, and NEAR_DUP_MAX_GROUP below bounds the
 # pathological case, so a fifty thousand row file is a second and a half. The
 # cap was refusing to run a check that would have finished.
-NEAR_DUP_CHUNK = 1_000
 
 # --- C10 single-feature leakage ---------------------------------------------
 # A column only counts as leaking if it beats always guessing the biggest class

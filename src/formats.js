@@ -18,7 +18,7 @@ const FALSE_WORDS = new Set(['false', 'f', 'no', 'n', '0', 'off'])
 // comes back as the text it was written as and never as a Number, because a
 // Number cannot hold 9007199254740993 and cannot hold 007 either. See
 // api/sift/formats.py for the longer version of why that matters.
-export function numberParts(value) {
+function numberParts(value) {
   let text = String(value ?? '').trim()
   if (!text) return null
 
@@ -123,8 +123,6 @@ const ENTITY = new RegExp(
   'g',
 )
 
-export const MARKUP = new RegExp(`${TAG.source}|${ENTITY.source}`)
-
 function entity(match) {
   const body = match.slice(1, -1)
   if (body.startsWith('#')) {
@@ -147,7 +145,6 @@ export function stripMarkup(value) {
 
 const ZERO_WIDTH = '\u200b\u200c\u200d\u2060\ufeff\u200e\u200f\u00ad'
 const SPACE_LIKE = '\u00a0\u2007\u202f\u2009\u2002\u2003'
-export const INVISIBLE = new RegExp(`[${ZERO_WIDTH}${SPACE_LIKE}]`)
 
 export function stripInvisible(value) {
   let out = ''
