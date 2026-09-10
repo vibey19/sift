@@ -2,7 +2,7 @@
 
 Sift cleans a messy CSV without the notebook. Drop a file in and it runs twenty-nine checks, fixes the unambiguous problems in one click, and hands you the rest with the row numbers and a reason.
 
-Live: `<https://sift-csv.vercel.app/>` · Sample datasets load from the empty state, so you can try it without uploading anything.
+Live: <https://sift-csv.vercel.app/> · Sample datasets load from the empty state, so you can try it without uploading anything.
 
 ![Dropping in a sample CSV, applying the four safe fixes in one click, then dropping the leaked column it found and watching the reported accuracy fall from 0.985 to 0.718](docs/demo.gif)
 
@@ -47,7 +47,7 @@ after   ·  cv accuracy 0.710  ·  108 rows flagged
 
 Accuracy falls and the flag count nearly triples, because without the leak the model is genuinely uncertain and disagrees with far more rows. The first line is the one you would have believed if the tool had hidden its own accuracy. That is the whole argument for printing it next to the flags.
 
-The five numbers that decide what gets flagged were set by sweeping each one against datasets with faults injected on purpose, so recall and false positives could be measured rather than guessed: [the thresholds I chose and why](docs/thresholds.md). The near-duplicate check is the one I got wrong first, and [how it went from 27,595 false pairs to 20](docs/near-duplicates.md) is written up separately.
+The five numbers that decide what gets flagged were set by sweeping each one against datasets with faults injected on purpose, so recall and false positives could be measured rather than guessed: [the thresholds I chose and why](docs/thresholds.md).
 
 ## What it can't do
 
