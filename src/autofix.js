@@ -29,10 +29,22 @@ import {
   TRIM,
 } from './edits.js'
 
+// The repeat arithmetic pass: the same operation, at a second point in the
+// order. Only the ordering knows about it; replay sees an ordinary fill.
+const FILL_FROM_FORMULA_AGAIN = 'fill_from_formula:again'
+
 // Order is not cosmetic. Sentinels have to be blanked before a gap can be
 // filled, a gap has to be filled before the row stops looking half empty, and
 // deduplication has to run after every value has settled or it compares rows
 // that are about to change.
+//
+// The two kinds of deduction feed each other, so neither order is right on its
+// own. Arithmetic recovers a price from a total and a quantity; the lookup then
+// names the item from that price. But the lookup also recovers a price from an
+// item, and arithmetic can then compute the total from it. So arithmetic runs,
+// then the lookups, then arithmetic again over whatever the lookups made
+// computable. The second pass is free when there is nothing left to do: it
+// only ever writes into a cell that is still empty.
 const ORDER = [
   STRIP_INVISIBLE,
   STRIP_MARKUP,
@@ -42,8 +54,9 @@ const ORDER = [
   REFORMAT_DATE,
   NORMALIZE_BOOLEAN,
   NORMALIZE,
-  FILL_FROM_COLUMN,
   FILL_FROM_FORMULA,
+  FILL_FROM_COLUMN,
+  FILL_FROM_FORMULA_AGAIN,
   FILL_MISSING,
   DROP_COLUMN,
   DEDUPE,
@@ -232,7 +245,14 @@ export function safeFixes(issues = []) {
       edits.push(edit)
     }
   }
-  return edits.sort((a, b) => ORDER.indexOf(a.op) - ORDER.indexOf(b.op))
+  // Every arithmetic fill is queued a second time, after the lookups, for the
+  // terms the lookups have just made computable.
+  const repeats = edits
+    .filter((e) => e.op === FILL_FROM_FORMULA)
+    .map((e) => ({ ...e, order: FILL_FROM_FORMULA_AGAIN }))
+  return [...edits, ...repeats].sort(
+    (a, b) => ORDER.indexOf(a.order ?? a.op) - ORDER.indexOf(b.order ?? b.op),
+  )
 }
 
 export function describeFixes(edits) {

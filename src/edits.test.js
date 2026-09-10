@@ -253,3 +253,35 @@ test('dropping rows counts only the rows it dropped', () => {
   assert.equal(out.applied[0].changed, 1) // row 1 was the duplicate
   assert.equal(out.applied[1].changed, 1) // row 1 was already gone
 })
+
+// --- a computed value has to look like the column it lands in ----------------
+
+test('a computed number is written the way the column writes numbers', () => {
+  // Writing 2 into a column of 2.0 is not only untidy. The lookup that fills
+  // the item from the price is keyed on the text, so "2" misses a table that
+  // says "2.0" and the row is labelled Unknown when the file could name it.
+  const out = replay(
+    ['qty', 'price', 'total'],
+    [['2', '2.0', '4.0'], ['3', '2.0', '6.0'], ['4', '2.0', ''], ['5', '3.0', '']],
+    [{ op: FILL_FROM_FORMULA, column: 'total', left: 'qty', right: 'price', operation: 'product' }],
+  )
+  assert.deepEqual(out.rows.map((r) => r[2]), ['4.0', '6.0', '8.0', '15.0'])
+})
+
+test('a column of integers keeps its integers', () => {
+  const out = replay(
+    ['a', 'b', 'c'],
+    [['2', '3', '6'], ['4', '5', '20'], ['6', '7', '']],
+    [{ op: FILL_FROM_FORMULA, column: 'c', left: 'a', right: 'b', operation: 'product' }],
+  )
+  assert.equal(out.rows[2][2], '42')
+})
+
+test('a column that disagrees with itself is left to the plain number', () => {
+  const out = replay(
+    ['a', 'b', 'c'],
+    [['2', '3', '6'], ['4', '5', '20.5'], ['1', '2', '2.25'], ['6', '7', '']],
+    [{ op: FILL_FROM_FORMULA, column: 'c', left: 'a', right: 'b', operation: 'product' }],
+  )
+  assert.equal(out.rows[3][2], '42')
+})

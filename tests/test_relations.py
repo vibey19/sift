@@ -273,3 +273,30 @@ def test_a_wide_file_with_no_relation_in_it_reports_none():
         {f"m{i}": rng.uniform(0, 100, 300).round(2) for i in range(25)}
     ).astype(str)
     assert not find(audit(df), "C13_arithmetic_relation")
+
+
+# --- the marker that was modal only because nothing else could be -----------
+
+def test_a_marker_in_a_date_column_is_blanked_without_asking():
+    """C11 was leaving 301 dates reading literally ERROR and UNKNOWN.
+
+    The guard that stopped it asks whether the marker is the commonest value in
+    the column, which is meant to catch a marker that is really a category. In a
+    column of dates nothing is common: 366 distinct dates over 10,000 rows means
+    the commonest holds 40 of them, so a marker on 3% of the rows is modal by
+    default and the guard fired on every high-cardinality column there is.
+    """
+    import pandas as pd
+
+    dates = pd.date_range("2023-01-01", periods=366).strftime("%Y-%m-%d").tolist()
+    values = (dates * 27)[:9700] + ["UNKNOWN"] * 159 + ["ERROR"] * 141
+    df = pd.DataFrame({"when": values, "n": [str(i) for i in range(len(values))]})
+
+    found = find(audit(df), "C11_sentinel_values", "when")
+    assert found, "a marker in a date column is still a marker"
+    assert found[0]["evidence"]["auto_apply"] is True
+    # And the guard still does its real job where a marker can be a category.
+    reasons = ["N/A"] * 24 + ["damaged"] * 20 + ["wrong size"] * 16
+    df2 = pd.DataFrame({"reason": reasons, "n": [str(i) for i in range(60)]})
+    kept = find(audit(df2), "C11_sentinel_values", "reason")
+    assert kept and kept[0]["evidence"]["auto_apply"] is False

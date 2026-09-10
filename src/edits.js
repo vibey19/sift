@@ -34,6 +34,35 @@ function normalise(value) {
   return String(value ?? '').trim().toLowerCase().replace(/\s+/g, ' ')
 }
 
+// The number of decimal places this column already uses, or null if it does not
+// agree with itself. Taken from the values as they stand rather than from the
+// original rows, so an earlier fix that reformatted the column is respected.
+function columnDecimals(rows, col, cellAt, droppedRows) {
+  const seen = new Map()
+  for (let row = 0; row < rows.length; row += 1) {
+    if (droppedRows.has(row)) continue
+    const text = String(cellAt(row, col) ?? '').trim()
+    if (!/^-?\d+(\.\d+)?$/.test(text)) continue
+    const dot = text.indexOf('.')
+    const places = dot < 0 ? 0 : text.length - dot - 1
+    seen.set(places, (seen.get(places) ?? 0) + 1)
+  }
+  if (!seen.size) return null
+  let best = null
+  let bestCount = 0
+  let total = 0
+  for (const [places, count] of seen) {
+    total += count
+    if (count > bestCount) {
+      best = places
+      bestCount = count
+    }
+  }
+  // Only when the column is close to unanimous. A column of genuinely varied
+  // precision should not have a computed value rounded to fit the majority.
+  return bestCount / total > 0.9 ? best : null
+}
+
 export function replay(columns, rows, edits) {
   const index = columnIndex(columns)
   const droppedRows = new Set()
@@ -144,6 +173,12 @@ export function replay(columns, rows, edits) {
         const a = index[edit.left]
         const b = index[edit.right]
         if (col == null || a == null || b == null) break
+        // How this column writes a number, so a computed one looks like the
+        // ones already there. Writing 2 into a column of 2.0 is not just untidy:
+        // the lookup that fills the item from the price is keyed on the text,
+        // so "2" misses a table that says "2.0" and the row ends up labelled
+        // Unknown when the file could name it.
+        const decimals = columnDecimals(rows, col, cellAt, droppedRows)
         for (let row = 0; row < rows.length; row += 1) {
           if (droppedRows.has(row)) continue
           if (String(cellAt(row, col) ?? '').trim() !== '') continue
@@ -160,8 +195,9 @@ export function replay(columns, rows, edits) {
                   ? x / y
                   : x - y
           // Floating point makes 4.199999999999999 out of 1.4 * 3. Rounded to a
-          // precision no money or count needs to exceed.
-          setCell(row, col, String(Math.round(value * 1e6) / 1e6))
+          // precision no money or count needs to exceed, then written to match.
+          const rounded = Math.round(value * 1e6) / 1e6
+          setCell(row, col, decimals === null ? String(rounded) : rounded.toFixed(decimals))
         }
         break
       }

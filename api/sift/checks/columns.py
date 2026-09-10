@@ -92,10 +92,18 @@ def _sentinel_values(df: pd.DataFrame, profiles: list[dict]) -> list[dict]:
             else "Left in place they read as a category rather than as an absence"
         )
         share = total / len(df) if len(df) else 0.0
+        # "The marker is the commonest thing in the column" only means something
+        # where the column has few enough values for one of them to be common.
+        # A date column has hundreds of distinct values and no single date holds
+        # more than a fraction of it, so a marker on 3% of the rows is the modal
+        # value by default - and the cafe sample was leaving 301 dates reading
+        # literally ERROR and UNKNOWN because of it, which is the exact fault
+        # this check exists to catch. UNKNOWN is never a date, never a number
+        # and never an identifier, so in those columns the share decides alone.
         modal = str(values.value_counts().index[0]) if len(values) else ""
-        automatic = (
-            share <= config.SENTINEL_AUTO_MAX_SHARE
-            and prof.normalise_text(modal) not in config.SENTINEL_TOKENS
+        could_be_a_category = kind in (prof.CATEGORICAL, prof.BOOLEAN, prof.TEXT, prof.CONSTANT)
+        automatic = share <= config.SENTINEL_AUTO_MAX_SHARE and not (
+            could_be_a_category and prof.normalise_text(modal) in config.SENTINEL_TOKENS
         )
         if not automatic:
             consequence += (

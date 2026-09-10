@@ -3541,10 +3541,10 @@
         "low_confidence": false,
         "rows": [
           {
-            "given": "0",
-            "index": 1886,
+            "given": "1",
+            "index": 1805,
             "noise_score": 0.9999,
-            "predicted": "1"
+            "predicted": "0"
           },
           {
             "given": "0",
@@ -3553,20 +3553,32 @@
             "predicted": "1"
           },
           {
-            "given": "1",
-            "index": 1805,
-            "noise_score": 0.9999,
-            "predicted": "0"
-          },
-          {
             "given": "0",
-            "index": 372,
+            "index": 1886,
             "noise_score": 0.9999,
             "predicted": "1"
           },
           {
             "given": "1",
             "index": 2805,
+            "noise_score": 0.9999,
+            "predicted": "0"
+          },
+          {
+            "given": "1",
+            "index": 1435,
+            "noise_score": 0.9999,
+            "predicted": "0"
+          },
+          {
+            "given": "1",
+            "index": 1152,
+            "noise_score": 0.9999,
+            "predicted": "0"
+          },
+          {
+            "given": "1",
+            "index": 2140,
             "noise_score": 0.9999,
             "predicted": "0"
           },
@@ -3579,7 +3591,7 @@
           {
             "given": "1",
             "index": 1760,
-            "noise_score": 0.9999,
+            "noise_score": 0.9998,
             "predicted": "0"
           },
           {
@@ -3589,69 +3601,57 @@
             "predicted": "1"
           },
           {
-            "given": "1",
-            "index": 2140,
+            "given": "0",
+            "index": 385,
             "noise_score": 0.9998,
-            "predicted": "0"
+            "predicted": "1"
+          },
+          {
+            "given": "0",
+            "index": 372,
+            "noise_score": 0.9998,
+            "predicted": "1"
           },
           {
             "given": "1",
-            "index": 1435,
+            "index": 2261,
             "noise_score": 0.9998,
-            "predicted": "0"
-          },
-          {
-            "given": "1",
-            "index": 1152,
-            "noise_score": 0.9998,
-            "predicted": "0"
-          },
-          {
-            "given": "1",
-            "index": 25,
-            "noise_score": 0.9997,
             "predicted": "0"
           },
           {
             "given": "1",
             "index": 2128,
-            "noise_score": 0.9997,
+            "noise_score": 0.9996,
             "predicted": "0"
           },
           {
-            "given": "0",
-            "index": 385,
-            "noise_score": 0.9996,
-            "predicted": "1"
-          },
-          {
-            "given": "0",
-            "index": 1737,
-            "noise_score": 0.9996,
-            "predicted": "1"
-          },
-          {
             "given": "1",
-            "index": 2502,
+            "index": 2942,
             "noise_score": 0.9995,
             "predicted": "0"
           },
           {
-            "given": "0",
-            "index": 2319,
-            "noise_score": 0.9994,
-            "predicted": "1"
-          },
-          {
             "given": "1",
-            "index": 306,
-            "noise_score": 0.9993,
+            "index": 25,
+            "noise_score": 0.9995,
             "predicted": "0"
           },
           {
             "given": "1",
-            "index": 2261,
-            "noise_score": 0.9992,
+            "index": 306,
+            "noise_score": 0.9995,
+            "predicted": "0"
+          },
+          {
+            "given": "1",
+            "index": 2959,
+            "noise_score": 0.9995,
+            "predicted": "0"
+          },
+          {
+            "given": "1",
+            "index": 2502,
+            "noise_score": 0.9994,
             "predicted": "0"
           },
           {
@@ -3662,162 +3662,162 @@
           },
           {
             "given": "0",
-            "index": 978,
-            "noise_score": 0.999,
+            "index": 1835,
+            "noise_score": 0.9988,
             "predicted": "1"
           },
           {
-            "given": "1",
-            "index": 2942,
-            "noise_score": 0.9989,
-            "predicted": "0"
+            "given": "0",
+            "index": 1737,
+            "noise_score": 0.9987,
+            "predicted": "1"
           },
           {
-            "given": "1",
-            "index": 1190,
-            "noise_score": 0.9986,
-            "predicted": "0"
+            "given": "0",
+            "index": 2319,
+            "noise_score": 0.9987,
+            "predicted": "1"
+          },
+          {
+            "given": "0",
+            "index": 978,
+            "noise_score": 0.9984,
+            "predicted": "1"
           },
           {
             "given": "0",
             "index": 414,
-            "noise_score": 0.9983,
+            "noise_score": 0.9984,
             "predicted": "1"
           },
           {
             "given": "1",
-            "index": 2959,
-            "noise_score": 0.9973,
+            "index": 1190,
+            "noise_score": 0.9982,
             "predicted": "0"
-          },
-          {
-            "given": "0",
-            "index": 1835,
-            "noise_score": 0.997,
-            "predicted": "1"
           },
           {
             "given": "1",
             "index": 1019,
-            "noise_score": 0.9968,
+            "noise_score": 0.9961,
             "predicted": "0"
-          },
-          {
-            "given": "1",
-            "index": 2877,
-            "noise_score": 0.9964,
-            "predicted": "0"
-          },
-          {
-            "given": "0",
-            "index": 716,
-            "noise_score": 0.995,
-            "predicted": "1"
           },
           {
             "given": "0",
             "index": 1089,
-            "noise_score": 0.9945,
+            "noise_score": 0.9958,
             "predicted": "1"
           },
           {
             "given": "1",
-            "index": 2636,
-            "noise_score": 0.9944,
+            "index": 2877,
+            "noise_score": 0.9956,
             "predicted": "0"
           },
           {
             "given": "1",
-            "index": 743,
-            "noise_score": 0.9933,
+            "index": 2636,
+            "noise_score": 0.9949,
             "predicted": "0"
           },
           {
             "given": "0",
             "index": 1010,
-            "noise_score": 0.993,
+            "noise_score": 0.9932,
             "predicted": "1"
           },
           {
-            "given": "0",
-            "index": 1660,
-            "noise_score": 0.9913,
-            "predicted": "1"
+            "given": "1",
+            "index": 743,
+            "noise_score": 0.9925,
+            "predicted": "0"
           },
           {
             "given": "0",
             "index": 2111,
-            "noise_score": 0.9908,
+            "noise_score": 0.9918,
             "predicted": "1"
           },
           {
             "given": "0",
             "index": 2988,
-            "noise_score": 0.9871,
+            "noise_score": 0.9892,
             "predicted": "1"
           },
           {
-            "given": "1",
-            "index": 649,
-            "noise_score": 0.9722,
-            "predicted": "0"
-          },
-          {
             "given": "0",
-            "index": 1038,
-            "noise_score": 0.9653,
+            "index": 716,
+            "noise_score": 0.987,
             "predicted": "1"
           },
           {
             "given": "1",
             "index": 81,
-            "noise_score": 0.9428,
+            "noise_score": 0.9803,
             "predicted": "0"
+          },
+          {
+            "given": "1",
+            "index": 649,
+            "noise_score": 0.9779,
+            "predicted": "0"
+          },
+          {
+            "given": "0",
+            "index": 1038,
+            "noise_score": 0.9702,
+            "predicted": "1"
+          },
+          {
+            "given": "0",
+            "index": 1660,
+            "noise_score": 0.9612,
+            "predicted": "1"
           }
         ],
         "share_of_rows": 0.012682926829268294
       },
       "id": "mislabels:churned",
       "row_indices": [
-        1886,
-        1389,
         1805,
-        372,
+        1389,
+        1886,
         2805,
+        1435,
+        1152,
+        2140,
         2061,
         1760,
         2506,
-        2140,
-        1435,
-        1152,
-        25,
-        2128,
         385,
-        1737,
-        2502,
-        2319,
-        306,
+        372,
         2261,
-        1449,
-        978,
+        2128,
         2942,
-        1190,
-        414,
+        25,
+        306,
         2959,
+        2502,
+        1449,
         1835,
+        1737,
+        2319,
+        978,
+        414,
+        1190,
         1019,
-        2877,
-        716,
         1089,
+        2877,
         2636,
-        743,
         1010,
-        1660,
+        743,
         2111,
         2988,
+        716,
+        81,
         649,
         1038,
-        81
+        1660
       ],
       "scope": "row",
       "severity": "medium",
