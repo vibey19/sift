@@ -12,13 +12,22 @@ services:
   - type: web
     name: sift-api
     runtime: python
-    # Free fits. Measured peak resident memory is 159MB with the libraries
-    # loaded, 186MB auditing 10,000 rows and 305MB auditing 50,000, which is the
-    # row limit; the free instance has 512MB. What free costs instead is a spin
-    # down after fifteen minutes idle, so the first request after a quiet spell
-    # waits around fifty seconds for the process to come back. Move to starter
-    # if that matters more than the seven dollars.
-    plan: free
+    # Not free. Free was tried and does not work, and the reason is worth
+    # writing down because the memory figures suggested it would: peak resident
+    # memory is 305MB auditing 50,000 rows against the 512MB a free instance
+    # has, which looked like enough headroom.
+    #
+    # What that number missed is the CPU. A free instance gets 0.1 of one, and
+    # this workload is a cross-validated model plus a decision tree per column.
+    # Measured against the live service on the 3,075 row sample: 24 seconds
+    # without a label column and 40 with one, where the same audit takes 1.5 and
+    # 2.8 seconds on a laptop. Fifteen times slower, and the instance then died
+    # and restarted rather than serving the next request.
+    #
+    # Standard is 1 CPU and 2GB, which is ten times the CPU and four times the
+    # memory. Starter would fix the speed and not the crash, since it has the
+    # same 512MB.
+    plan: standard
     region: oregon
     branch: main
     buildCommand: pip install -r requirements.txt

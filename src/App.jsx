@@ -207,7 +207,17 @@ export default function App({ handoff, onLeave }) {
         )}
 
         {stage === 'empty' && <Upload onFile={onFile} />}
-        {stage === 'profiling' && <Working title="Reading the file" note="Inferring column types." />}
+        {stage === 'profiling' && (
+          <Working
+            title="Reading the file"
+            note="Inferring column types."
+            slowNote={
+              'Waiting on the server, which sleeps when nobody has used it for a while ' +
+              'and takes about a minute to start. This only happens on the first request; ' +
+              'everything after it is immediate.'
+            }
+          />
+        )}
 
         {(stage === 'mapping' || stage === 'auditing' || stage === 'results') && columnProfile && (
           <div style={{ marginBottom: 16 }}>
@@ -316,12 +326,21 @@ export default function App({ handoff, onLeave }) {
   )
 }
 
-function Working({ title, note }) {
+// A progress bar with nothing to report has to keep earning the wait, or ten
+// seconds of it reads as a hang and sixty reads as broken. So it counts, and
+// once it has been going longer than the work itself should take, it says what
+// is actually happening instead: the API sleeps when idle and takes about a
+// minute to wake, and a wait that has been explained is a different experience
+// from the same wait in silence.
+const SLOW_AFTER = 8
+
+function Working({ title, note, slowNote }) {
   const [seconds, setSeconds] = useState(0)
   useEffect(() => {
     const id = setInterval(() => setSeconds((s) => s + 1), 1000)
     return () => clearInterval(id)
   }, [])
+  const slow = slowNote && seconds >= SLOW_AFTER
 
   return (
     <div className="loading panel">
@@ -330,7 +349,7 @@ function Working({ title, note }) {
         <span aria-hidden> · {seconds}s</span>
       </p>
       <p className="label" style={{ marginTop: 8, textTransform: 'none', letterSpacing: 0 }}>
-        {note}
+        {slow ? slowNote : note}
       </p>
       <div className="loading-bar" aria-hidden><i /></div>
     </div>
@@ -343,17 +362,18 @@ function Working({ title, note }) {
 // is what makes waiting feel like waiting rather than like failure.
 function auditingNote(rows, hasLabel) {
   if (!hasLabel) {
-    return rows > 20_000
-      ? `Twenty-two checks over ${rows.toLocaleString()} rows. Around ten seconds at this size.`
-      : 'Running twenty-two checks over your rows.'
+    return `Running twenty-nine checks over ${rows.toLocaleString()} rows.`
   }
-  // Cross-validating a model is most of the time, and it is the part that grows
-  // with the row count. These are measured, not guessed: 5s at 1,500 rows, 10s
-  // at 12,000, 21s at 30,000.
-  const seconds = Math.max(5, Math.round(rows / 1500))
+  // No second count. There was one, extrapolated from how long this takes on a
+  // developer machine, and it was wrong by more than an order of magnitude on a
+  // small hosted instance: five seconds promised, a minute delivered. A number
+  // that turns out to be wrong is worse than no number, because the wait then
+  // reads as a fault rather than as work. What the wait is for is true wherever
+  // it runs.
   return (
-    `Cross-validating a model over ${rows.toLocaleString()} rows so that every row is ` +
-    `scored by one that never saw it. Around ${seconds} seconds at this size.`
+    `Cross-validating a model over ${rows.toLocaleString()} rows, so that every row is ` +
+    'scored by one that never saw it. This is the slowest part of the audit and the ' +
+    'only part that grows with the size of the file.'
   )
 }
 

@@ -93,6 +93,22 @@ async function post(path, body) {
   return response.json()
 }
 
+// The API sleeps after fifteen minutes of nobody using it, and takes about a
+// minute to come back. Nothing can make that first start faster, but it does not
+// have to happen while someone waits: this is fired the moment the page loads,
+// so the wake-up overlaps with reading the page and picking a file rather than
+// following it. By the time a CSV is dropped the server is usually up.
+//
+// Deliberately unawaited and deliberately silent. It is a hint, not a step, and
+// a page that cannot reach the API yet should not say so before anyone has
+// asked it for anything.
+let warmed = false
+export function warm() {
+  if (warmed || USE_FIXTURES) return
+  warmed = true
+  fetch(API_BASE + '/api/health', { method: 'GET', cache: 'no-store' }).catch(() => {})
+}
+
 export function profile(csv, { delimiter = null, fixture = 'profile_churn' } = {}) {
   if (USE_FIXTURES) return fromFixture(fixture)
   return post('/api/profile', { csv, delimiter })

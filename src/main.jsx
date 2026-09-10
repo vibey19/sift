@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 
 import App from './App.jsx'
 import Landing from './Landing.jsx'
+import { warm } from './api.js'
 import './theme.css'
 
 // One page, two surfaces. The auditor used to live at its own route, which meant
@@ -14,6 +15,10 @@ import './theme.css'
 function Root() {
   const [inApp, setInApp] = useState(() => window.location.pathname.startsWith('/app'))
   const [handoff, setHandoff] = useState(null)
+
+  // Before anything is asked of it, so a sleeping instance is already
+  // waking while the page is being read.
+  useEffect(() => warm(), [])
 
   useEffect(() => {
     document.body.dataset.surface = inApp ? 'app' : 'landing'
