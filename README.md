@@ -4,7 +4,7 @@ Sift cleans a messy CSV without the notebook. Drop a file in and it runs twenty-
 
 Live: <https://sift-csv.vercel.app/> · Sample datasets load from the empty state, so you can try it without uploading anything.
 
-![Dropping in a sample CSV, applying the seven safe fixes in one click, then dropping the leaked column it found and watching the reported accuracy fall from 0.986 to 0.706](docs/demo.gif)
+[![Sift auditing a sample CSV: twenty-nine checks, the seven safe fixes applied in one click, and the leaked column it found left for you to decide on](docs/demo-poster.jpg)](docs/demo.mp4)
 
 ## Why
 
